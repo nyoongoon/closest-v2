@@ -2,6 +2,7 @@ package com.example.closestv2.api.service;
 
 import com.example.closestv2.api.service.model.request.MemberAuthSigninPostServiceRequest;
 import com.example.closestv2.api.service.model.request.MemberAuthSignupPostServiceRequest;
+import com.example.closestv2.config.security.TokenProvider;
 import com.example.closestv2.domain.member.MemberRepository;
 import com.example.closestv2.domain.member.MemberRoot;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
@@ -29,11 +31,13 @@ class MemberAuthServiceTest {
 
     @Mock
     private MemberRepository memberRepository;
+    private PasswordEncoder passwordEncoder;
+    private TokenProvider tokenProvider;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        sut = new MemberAuthService(memberRepository);
+        sut = new MemberAuthService(memberRepository, passwordEncoder, tokenProvider);
     }
 
     @Test

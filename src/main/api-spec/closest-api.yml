@@ -1,7 +1,7 @@
 openapi: 3.0.1
 servers:
   - description: 로컬 서버
-    url: localhost:8080
+    url: http://localhost:8080
 info:
   description: Closest의 API 명세서입니다.
   version: 0.0.1

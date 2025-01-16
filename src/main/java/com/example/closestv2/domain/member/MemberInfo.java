@@ -1,5 +1,6 @@
 package com.example.closestv2.domain.member;
 
+import com.example.closestv2.config.security.Authority;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.validation.constraints.Email;
@@ -21,19 +22,22 @@ public class MemberInfo {
     @NotBlank(message = EMAIL_IS_REQUIRED)
     @Email(message = NOT_VALID_EMAIL)
     @Column(unique = true)
-    String userEmail;
+    private String userEmail;
 
     @NotBlank(message = PASSWORD_IS_REQUIRED)
     @Pattern(regexp = PASSWORD, message = NOT_VALID_PASSWORD_FORM)
-    String password;
+    private String password;
 
-    String nickName;
+    private String nickName;
+
+    private Authority authority;
 
     @Builder(access = AccessLevel.PROTECTED)
     private MemberInfo(
             String userEmail,
             String password,
-            String nickName
+            String nickName,
+            Authority authority
     ) {
         Assert.hasText(userEmail, EMAIL_IS_REQUIRED);
         Assert.isTrue(userEmail.matches(EMAIL), NOT_VALID_EMAIL);

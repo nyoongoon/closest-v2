@@ -1,6 +1,7 @@
 package com.example.closestv2.domain.blog;
 
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.Id;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;

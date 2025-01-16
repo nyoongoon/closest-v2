@@ -22,7 +22,7 @@ import static com.example.closestv2.api.exception.ExceptionMessageConstants.NOT_
 @Entity
 @Table(name = "member")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class MemberRoot implements UserDetails {
+public class MemberRoot {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "member_id")
@@ -116,20 +116,5 @@ public class MemberRoot implements UserDetails {
                 .build();
 
         return new StatusMessageEditEvent(blogUrl, statusMessage);
-    }
-
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
-    }
-
-    @Override
-    public String getPassword() {
-        return memberInfo.getPassword();
-    }
-
-    @Override
-    public String getUsername() {
-        return memberInfo.getUserEmail();
     }
 }

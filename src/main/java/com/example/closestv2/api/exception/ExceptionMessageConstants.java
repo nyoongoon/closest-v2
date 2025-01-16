@@ -67,6 +67,10 @@ public final class ExceptionMessageConstants {
 
     /* 권한 부족 */
     public static final String ACCESS_DENIED_BY_MEMBER_ID = "권한이 부족합니다 - memberId가 일치하지 않음";
+    public static final String INVALID_HEADER = "올바르지 못한 헤더 정보입니다.";
+
+    /* 브라우저 에러 */
+    public static final String COOKIE_NOT_FOUND = "쿠키를 찾을 수 없습니다";
 
 
     /* 미식별 에러 */
