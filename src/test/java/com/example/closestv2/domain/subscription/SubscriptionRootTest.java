@@ -2,7 +2,6 @@ package com.example.closestv2.domain.subscription;
 
 import com.example.closestv2.domain.subscription.event.SubscriptionsBlogVisitEvent;
 import com.example.closestv2.domain.subscription.event.SubscriptionsPostVisitEvent;
-import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -16,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class SubscriptionRootTest {
-    private final long ANY_MEMBER_ID = 1L;
+    private final String ANY_MEMBER_EMAIL = "abc@naver.com";
     private final URL ANY_BLOG_URL = URI.create("https://example.com/blog123").toURL();
     private final URL ANY_POST_URL = URI.create("https://example.com/blog123/1").toURL();
     private final String ANY_BLOG_TITLE = "블로그 제목";
@@ -29,7 +28,7 @@ class SubscriptionRootTest {
     @DisplayName("구독을 방문하면 구독 방문 횟수가 증가한다.")
     void increaseVisitCount() {
         //given
-        SubscriptionRoot sut = SubscriptionRoot.create(ANY_MEMBER_ID, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME);
+        SubscriptionRoot sut = SubscriptionRoot.create(ANY_MEMBER_EMAIL, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME);
         ReflectionTestUtils.setField(sut, "id", 1L);
         //when
         sut.increaseVisitCount();
@@ -42,7 +41,7 @@ class SubscriptionRootTest {
     @DisplayName("구독을 방문하면 구독 블로그 방문 이벤트를 리턴한다.")
     void increaseVisitCountReturnEvent() {
         //given
-        SubscriptionRoot sut = SubscriptionRoot.create(ANY_MEMBER_ID, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME);
+        SubscriptionRoot sut = SubscriptionRoot.create(ANY_MEMBER_EMAIL, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME);
         ReflectionTestUtils.setField(sut, "id", 1L);
         //when
         SubscriptionsBlogVisitEvent event = sut.increaseVisitCount();
@@ -54,7 +53,7 @@ class SubscriptionRootTest {
     @DisplayName("구독-포스트을 방문하면 구독 방문 횟수가 증가한다.")
     void increasePostVisitCount() {
         //given
-        SubscriptionRoot sut = SubscriptionRoot.create(ANY_MEMBER_ID, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME);
+        SubscriptionRoot sut = SubscriptionRoot.create(ANY_MEMBER_EMAIL, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME);
         ReflectionTestUtils.setField(sut, "id", 1L);
         //when
         sut.increasePostVisitCount(ANY_POST_URL);
@@ -66,7 +65,7 @@ class SubscriptionRootTest {
     @DisplayName("구독-포스트를 방문하면 구독-포스트 블로그 방문 이벤트를 리턴한다.")
     void increasePostVisitCountReturnEvent() {
         //given
-        SubscriptionRoot sut = SubscriptionRoot.create(ANY_MEMBER_ID, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME);
+        SubscriptionRoot sut = SubscriptionRoot.create(ANY_MEMBER_EMAIL, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME);
         ReflectionTestUtils.setField(sut, "id", 1L);
         //when
         SubscriptionsPostVisitEvent event = sut.increasePostVisitCount(ANY_POST_URL);
@@ -79,7 +78,7 @@ class SubscriptionRootTest {
     @DisplayName("해당 구독의 블로그 정보 업데이트 시 최근 발생시간과 새로운 포스트 개수를 설정한다.")
     void putRecentBlogInfo() {
         //given
-        SubscriptionRoot sut = SubscriptionRoot.create(ANY_MEMBER_ID, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME);
+        SubscriptionRoot sut = SubscriptionRoot.create(ANY_MEMBER_EMAIL, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME);
         LocalDateTime recent = ANY_PUBLISHED_DATE_TIME.plusSeconds(1);
         int newPostCount = 12;
         //when
@@ -94,7 +93,7 @@ class SubscriptionRootTest {
     @DisplayName("publishedDateTime을 새로 받을 때, 기존 시간 보다 이전 시간이면 에러가 발생한다.")
     void publishedDateTimeWithPastDateTime() {
         //given
-        SubscriptionRoot sut = SubscriptionRoot.create(ANY_MEMBER_ID, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME);
+        SubscriptionRoot sut = SubscriptionRoot.create(ANY_MEMBER_EMAIL, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME);
         LocalDateTime past = ANY_PUBLISHED_DATE_TIME.minusSeconds(1);
         //expected
         assertThatThrownBy(() -> sut.putRecentBlogInfo(past, 12))  //새로 받은 개수를 그대로 pu
@@ -105,7 +104,7 @@ class SubscriptionRootTest {
     @DisplayName("Subscription NickName을 변경할 수 있다.")
     void editSubscriptionNickName() {
         //given
-        SubscriptionRoot sut = SubscriptionRoot.create(ANY_MEMBER_ID, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME);
+        SubscriptionRoot sut = SubscriptionRoot.create(ANY_MEMBER_EMAIL, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME);
         String editNickName = "수정된 닉네임";
         //when
         sut.editSubscriptionNickName(editNickName);

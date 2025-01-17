@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 class SubscriptionQueryServiceTest {
-    private final Long ANY_MEMBER_ID_1 = 1L;
+    private final String ANY_MEMBER_ID_1 = "email@naver.com";
     private final Long ANY_MEMBER_ID_2 = 2L;
     private final String ANY_BLOG_LINK = "https://example.com/";
     private final String ANY_BLOG_TITLE = "블로그 제목";

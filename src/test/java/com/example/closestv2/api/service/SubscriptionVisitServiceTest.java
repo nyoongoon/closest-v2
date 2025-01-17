@@ -25,7 +25,7 @@ import static org.mockito.Mockito.*;
 
 class SubscriptionVisitServiceTest {
     private final long ANY_SUBSCRIPTIONS_ID = 1L;
-    private final long ANY_MEMBER_ID = 1L;
+    private final String ANY_MEMBER_EMAIL = "abc@naver.com";
     private final URL ANY_BLOG_URL = UrlUtils.from("https://example.com/blog123");
     private final URL ANY_POST_URL = UrlUtils.from("https://example.com/blog123/1");
     private final String ANY_BLOG_TITLE = "블로그 제목";
@@ -44,7 +44,7 @@ class SubscriptionVisitServiceTest {
     }
 
     private SubscriptionRoot setMock() {
-        SubscriptionRoot subscriptionRoot = SubscriptionRoot.create(ANY_MEMBER_ID, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME);
+        SubscriptionRoot subscriptionRoot = SubscriptionRoot.create(ANY_MEMBER_EMAIL, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME);
         ReflectionTestUtils.setField(subscriptionRoot, "id", 1L);
         when(subscriptionRepository.findById(ANY_SUBSCRIPTIONS_ID)).thenReturn(Optional.of(subscriptionRoot));
         return subscriptionRoot;

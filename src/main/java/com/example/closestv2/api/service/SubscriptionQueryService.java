@@ -21,14 +21,14 @@ public class SubscriptionQueryService implements SubscriptionQueryUsecase {
     private final SubscriptionQueryRepository subscriptionQueryRepository;
 
     @Override
-    public List<SubscriptionResponse> getCloseSubscriptions(long memberId) {
-        List<SubscriptionRoot> subscriptionRoots = subscriptionQueryRepository.findByMemberIdVisitCountDesc(memberId, 0, 20);
+    public List<SubscriptionResponse> getCloseSubscriptions(String memberEmail) {
+        List<SubscriptionRoot> subscriptionRoots = subscriptionQueryRepository.findByMemberIdVisitCountDesc(memberEmail, 0, 20);
         return extractSubscriptionResponses(subscriptionRoots, new ArrayList<>());
     }
 
     @Override
-    public List<SubscriptionResponse> getRecentPublishedSubscriptions(long memberId, int page, int size) {
-        List<SubscriptionRoot> subscriptionRoots = subscriptionQueryRepository.findByMemberIdPublishedDateTimeDesc(memberId, page, size);
+    public List<SubscriptionResponse> getRecentPublishedSubscriptions(String memberEmail, int page, int size) {
+        List<SubscriptionRoot> subscriptionRoots = subscriptionQueryRepository.findByMemberIdPublishedDateTimeDesc(memberEmail, page, size);
         return extractSubscriptionResponses(subscriptionRoots, new ArrayList<>());
     }
 

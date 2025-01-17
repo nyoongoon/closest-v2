@@ -31,7 +31,7 @@ public class SubscriptionRegisterService implements SubscriptionRegisterUsecase 
     @Override
     @Transactional
     public void registerSubscription(SubscriptionsPostServiceRequest serviceRequest) {
-        long memberId = serviceRequest.getMemberId();
+        String memberEmail = serviceRequest.getMemberEmail();
         URL rssUrl = serviceRequest.getRssUrl();
 
         BlogRoot blogRoot;
@@ -46,17 +46,17 @@ public class SubscriptionRegisterService implements SubscriptionRegisterUsecase 
         URL blogUrl = blogRoot.getBlogInfo().getBlogUrl();
         String blogTitle = blogRoot.getBlogInfo().getBlogTitle();
         LocalDateTime publishedDateTime = blogRoot.getBlogInfo().getPublishedDateTime();
-        SubscriptionRoot subscriptionRoot = SubscriptionRoot.create(memberId, blogUrl, blogTitle, publishedDateTime);
+        SubscriptionRoot subscriptionRoot = SubscriptionRoot.create(memberEmail, blogUrl, blogTitle, publishedDateTime);
         subscriptionRepository.save(subscriptionRoot);
     }
 
     @Override
-    public void unregisterSubscription(long memberId, long subscriptionId) {
+    public void unregisterSubscription(String memberEmail, long subscriptionId) {
         SubscriptionRoot subscriptionRoot = subscriptionRepository.findById(subscriptionId)
                 .orElseThrow(() -> new IllegalArgumentException(NOT_FOUND_SUBSCRIPTION));
 
-        long foundMemberId = subscriptionRoot.getSubscriptionInfo().getMemberId();
-        if (memberId != foundMemberId) {
+        String foundMemberEmail = subscriptionRoot.getSubscriptionInfo().getMemberEmail();
+        if (!memberEmail.equals(foundMemberEmail)) {
             throw new AccessDeniedException(ACCESS_DENIED_BY_MEMBER_ID);
         }
 

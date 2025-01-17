@@ -98,8 +98,13 @@ public class JwtTokenProvider implements TokenProvider {
     }
 
     @Override
-    public Token resolveToken(String headerValue, String tokenPrefix) {
-        String tokenValue = headerValue.substring(tokenPrefix.length());
+    public Token resolveToken(String value) {
+        return new JwtToken(value);
+    }
+
+    @Override
+    public Token resolveToken(String value, String tokenPrefix) {
+        String tokenValue = value.substring(tokenPrefix.length());
         return new JwtToken(tokenValue);
     }
 //    public String getRefreshTokenByClaims(Claims claims) {

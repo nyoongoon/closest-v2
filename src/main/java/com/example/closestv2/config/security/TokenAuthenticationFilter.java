@@ -19,8 +19,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-import static com.example.closestv2.api.exception.ExceptionMessageConstants.COOKIE_NOT_FOUND;
-import static com.example.closestv2.api.exception.ExceptionMessageConstants.INVALID_HEADER;
 import static com.example.closestv2.config.security.TokenConstants.*;
 import static com.example.closestv2.config.security.TokenConstants.TokenType.ACCESS_TOKEN;
 import static com.example.closestv2.config.security.TokenConstants.TokenType.REFRESH_TOKEN;
@@ -34,8 +32,9 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     // 요청 -> filter -> servlet -> interceptor -> aop -> controller
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        Optional<Token> accessTokenOptional = resolveAccessTokenByHeader(request, TOKEN_HEADER.getValue());
-        Optional<Token> refreshTokenOptional = resolveRefreshTokenByCookie(request, TOKEN_COOKIE.getValue());
+//        Optional<Token> accessTokenOptional = resolveAccessTokenByHeader(request, TOKEN_HEADER.getValue())
+        Optional<Token> accessTokenOptional = resolveTokenByCookie(request, ACCESS_TOKEN_COOKIE.getValue());;
+        Optional<Token> refreshTokenOptional = resolveTokenByCookie(request, REFRESH_TOKEN_COOKIE.getValue());
         if (accessTokenOptional.isEmpty() || refreshTokenOptional.isEmpty()) {
             filterChain.doFilter(request, response);
             return;
@@ -78,13 +77,13 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     }
 
     // 쿠키에서 리프레시 토큰 얻기
-    private Optional<Token> resolveRefreshTokenByCookie(HttpServletRequest request, String cookieKey) {
+    private Optional<Token> resolveTokenByCookie(HttpServletRequest request, String cookieKey) {
         Cookie refreshTokenCookie = WebUtils.getCookie(request, cookieKey);
         if (refreshTokenCookie == null) {
             return Optional.empty();
         }
         String cookieValue = refreshTokenCookie.getValue();
-        Token refreshToken = tokenProvider.resolveToken(cookieValue, TOKEN_PREFIX.getValue());
+        Token refreshToken = tokenProvider.resolveToken(cookieValue);
         return Optional.of(refreshToken);
     }
 

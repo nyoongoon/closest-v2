@@ -26,7 +26,7 @@ public class MockSecurityContext implements WithSecurityContextFactory<MockUser>
         var userRole = new SimpleGrantedAuthority("ROLE_USER");
         var auth = new UsernamePasswordAuthenticationToken(
                 memberRoot,
-                memberRoot.getPassword(),
+                null,
                 List.of(userRole)
         );
 

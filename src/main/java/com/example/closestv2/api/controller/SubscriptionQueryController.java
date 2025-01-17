@@ -19,16 +19,16 @@ public class SubscriptionQueryController implements SubscriptionQueryApi {
     @Override
     public ResponseEntity<List<SubscriptionResponse>> subscriptionsBlogsCloseGet() {
         Authentication authentication = SecurityContextHolder.getContextHolderStrategy().getContext().getAuthentication();
-        Object principal = authentication.getPrincipal();
-        List<SubscriptionResponse> closeSubscriptions = subscriptionQueryUsecase.getCloseSubscriptions((long) principal);
+        String memberEmail = (String) authentication.getPrincipal();
+        List<SubscriptionResponse> closeSubscriptions = subscriptionQueryUsecase.getCloseSubscriptions(memberEmail);
         return ResponseEntity.ok(closeSubscriptions);
     }
 
     @Override
     public ResponseEntity<List<SubscriptionResponse>> subscriptionsBlogsGet(Integer page, Integer size) {
         Authentication authentication = SecurityContextHolder.getContextHolderStrategy().getContext().getAuthentication();
-        Object principal = authentication.getPrincipal();
-        List<SubscriptionResponse> subscriptions = subscriptionQueryUsecase.getRecentPublishedSubscriptions((long) principal, page, size);
+        String memberEmail = (String) authentication.getPrincipal();
+        List<SubscriptionResponse> subscriptions = subscriptionQueryUsecase.getRecentPublishedSubscriptions(memberEmail, page, size);
         return ResponseEntity.ok(subscriptions);
     }
 }

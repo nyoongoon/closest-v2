@@ -43,13 +43,13 @@ public class SubscriptionRoot {
     }
 
     public static SubscriptionRoot create(
-            long memberId,
+            String memberEmail,
             URL blogUrl,
             String blogTitle,
             LocalDateTime publishedDateTime
     ) {
         SubscriptionInfo subscriptionInfo = SubscriptionInfo.builder()
-                .memberId(memberId)
+                .memberEmail(memberEmail)
                 .subscriptionVisitCount(0L)
                 .build();
         SubscriptionBlog subscriptionBlog = SubscriptionBlog.builder()
@@ -69,7 +69,7 @@ public class SubscriptionRoot {
         long plusedVisitCount = subscriptionInfo.getSubscriptionVisitCount() + 1;
 
         subscriptionInfo = SubscriptionInfo.builder()
-                .memberId(subscriptionInfo.getMemberId())
+                .memberEmail(subscriptionInfo.getMemberEmail())
                 .subscriptionVisitCount(plusedVisitCount)
                 .build();
         return new SubscriptionsBlogVisitEvent(id, subscriptionBlog.getBlogUrl());
@@ -80,7 +80,7 @@ public class SubscriptionRoot {
         long plusedVisitCount = subscriptionInfo.getSubscriptionVisitCount() + 1;
 
         subscriptionInfo = SubscriptionInfo.builder()
-                .memberId(subscriptionInfo.getMemberId())
+                .memberEmail(subscriptionInfo.getMemberEmail())
                 .subscriptionVisitCount(plusedVisitCount)
                 .build();
         return new SubscriptionsPostVisitEvent(id, subscriptionBlog.getBlogUrl(), postUrl);
@@ -101,7 +101,7 @@ public class SubscriptionRoot {
 
     public void editSubscriptionNickName(String editNickName) {
         subscriptionInfo = SubscriptionInfo.builder()
-                .memberId(subscriptionInfo.getMemberId())
+                .memberEmail(subscriptionInfo.getMemberEmail())
                 .subscriptionNickName(editNickName)
                 .subscriptionVisitCount(subscriptionInfo.getSubscriptionVisitCount())
                 .build();

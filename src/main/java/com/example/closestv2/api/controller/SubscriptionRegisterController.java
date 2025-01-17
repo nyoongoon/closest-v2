@@ -19,15 +19,15 @@ public class SubscriptionRegisterController implements SubscriptionRegisterApi {
     @Override
     public ResponseEntity<Void> subscriptionsPost(SubscriptionsPostRequest subscriptionsPostRequest) {
         Authentication authentication = SecurityContextHolder.getContextHolderStrategy().getContext().getAuthentication();
-        Object principal = authentication.getPrincipal();
-        SubscriptionsPostServiceRequest serviceRequest = toServiceRequest((long) principal, subscriptionsPostRequest);
+        String memberEmail = (String) authentication.getPrincipal();
+        SubscriptionsPostServiceRequest serviceRequest = toServiceRequest(memberEmail, subscriptionsPostRequest);
         subscriptionRegisterUsecase.registerSubscription(serviceRequest);
         return ResponseEntity.ok().build();
     }
 
-    private SubscriptionsPostServiceRequest toServiceRequest(long memberId, SubscriptionsPostRequest request) {
+    private SubscriptionsPostServiceRequest toServiceRequest(String memberEmail, SubscriptionsPostRequest request) {
         return SubscriptionsPostServiceRequest.builder()
-                .memberId(memberId)
+                .memberEmail(memberEmail)
                 .rssUrl(UrlUtils.from(request.getRssUri()))
                 .build();
     }
@@ -35,8 +35,8 @@ public class SubscriptionRegisterController implements SubscriptionRegisterApi {
     @Override
     public ResponseEntity<Void> subscriptionsSubscriptionsIdDelete(Long subscriptionsId) {
         Authentication authentication = SecurityContextHolder.getContextHolderStrategy().getContext().getAuthentication();
-        Object principal = authentication.getPrincipal();
-        subscriptionRegisterUsecase.unregisterSubscription((long) principal, subscriptionsId);
+        String memberEmail = (String) authentication.getPrincipal();
+        subscriptionRegisterUsecase.unregisterSubscription(memberEmail, subscriptionsId);
         return ResponseEntity.ok().build();
     }
 }

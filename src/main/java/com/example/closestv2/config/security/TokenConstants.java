@@ -9,7 +9,8 @@ public enum TokenConstants {
     TOKEN_HEADER("Authorization"),
     TOKEN_PREFIX ("Bearer "),
     KEY_ROLES("roles"),
-    TOKEN_COOKIE("refreshToken");
+    REFRESH_TOKEN_COOKIE("refreshToken"),
+    ACCESS_TOKEN_COOKIE("accessToken");
 
     private final String value;
 

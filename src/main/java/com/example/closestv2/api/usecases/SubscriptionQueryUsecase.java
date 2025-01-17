@@ -7,6 +7,6 @@ import java.util.List;
 
 @Service
 public interface SubscriptionQueryUsecase {
-    List<SubscriptionResponse> getCloseSubscriptions(long memberId);
-    List<SubscriptionResponse> getRecentPublishedSubscriptions(long memberId, int page, int size);
+    List<SubscriptionResponse> getCloseSubscriptions(String memberEmail);
+    List<SubscriptionResponse> getRecentPublishedSubscriptions(String memberEmail, int page, int size);
 }
