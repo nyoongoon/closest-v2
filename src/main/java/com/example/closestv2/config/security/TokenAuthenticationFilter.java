@@ -32,14 +32,13 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     // 요청 -> filter -> servlet -> interceptor -> aop -> controller
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-//        Optional<Token> accessTokenOptional = resolveAccessTokenByHeader(request, TOKEN_HEADER.getValue())
         Optional<Token> accessTokenOptional = resolveTokenByCookie(request, ACCESS_TOKEN_COOKIE.getValue());;
         Optional<Token> refreshTokenOptional = resolveTokenByCookie(request, REFRESH_TOKEN_COOKIE.getValue());
-        if (accessTokenOptional.isEmpty() || refreshTokenOptional.isEmpty()) {
+        if (accessTokenOptional.isEmpty() && refreshTokenOptional.isEmpty()) {
             filterChain.doFilter(request, response);
             return;
         }
-        Token accessToken = accessTokenOptional.get();
+        Token accessToken = accessTokenOptional.get() //todo accessToken만 없는 경우 refresh 처리하기
         Token refreshToken = refreshTokenOptional.get();
 
         boolean isAccessTokenValidate = tokenProvider.validateToken(accessToken, ACCESS_TOKEN);
