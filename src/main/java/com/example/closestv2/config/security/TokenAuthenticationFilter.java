@@ -32,24 +32,34 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     // 요청 -> filter -> servlet -> interceptor -> aop -> controller
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        Optional<Token> accessTokenOptional = resolveTokenByCookie(request, ACCESS_TOKEN_COOKIE.getValue());;
+        Optional<Token> accessTokenOptional = resolveTokenByCookie(request, ACCESS_TOKEN_COOKIE.getValue());
+        ;
         Optional<Token> refreshTokenOptional = resolveTokenByCookie(request, REFRESH_TOKEN_COOKIE.getValue());
         if (accessTokenOptional.isEmpty() && refreshTokenOptional.isEmpty()) {
             filterChain.doFilter(request, response);
             return;
         }
-        Token accessToken = accessTokenOptional.get() //todo accessToken만 없는 경우 refresh 처리하기
-        Token refreshToken = refreshTokenOptional.get();
+//        Token accessToken = accessTokenOptional.get() //todo accessToken만 없는 경우 refresh 처리하기
+        boolean isAccessTokenValidate;
+        if (accessTokenOptional.isEmpty() || !tokenProvider.validateToken(accessTokenOptional.get(), ACCESS_TOKEN)) {
+            isAccessTokenValidate = false;
+        } else {
+            isAccessTokenValidate = true;
+        }
 
-        boolean isAccessTokenValidate = tokenProvider.validateToken(accessToken, ACCESS_TOKEN);
-        boolean isRefreshTokenValidate = tokenProvider.validateToken(refreshToken, REFRESH_TOKEN);
+        boolean isRefreshTokenValidate;
+        if (refreshTokenOptional.isEmpty() || !tokenProvider.validateToken(refreshTokenOptional.get(), REFRESH_TOKEN)) {
+            isRefreshTokenValidate = false;
+        } else {
+            isRefreshTokenValidate = true;
+        }
 
         if (isAccessTokenValidate) {
             // 엑세스 토큰 유효
-            authenticate(accessToken);
+            authenticate(accessTokenOptional.get());
         } else if (isRefreshTokenValidate) {
             // 리프레시 토큰 유효
-            Token newAccessToken = tokenProvider.issueToken(refreshToken);
+            Token newAccessToken = tokenProvider.issueToken(refreshTokenOptional.get());
             authenticate(newAccessToken);
             addAccessTokenToCookie(response, newAccessToken); //todo refreshToken renewal?
         } else {
