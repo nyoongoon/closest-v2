@@ -1,3 +1,6 @@
+To achieve this, you need to add a new modal for "블로그 구독하기" and modify the `handleMouseMove` function to handle the right edge for showing this new modal. Here is the updated code:
+
+```vue
 <template>
   <div id="app">
     <svg id="svg">
@@ -51,6 +54,18 @@
           <input type="password" id="confirm-password" name="confirm-password"/>
           <div class="button-group">
             <button type="submit" class="signup-button signup-request-button">회원가입</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div v-if="showSubscribeModal" class="subscribe-modal">
+      <div class="modal-content">
+        <h2>블로그 구독하기</h2>
+        <form @submit.prevent="handleSubscribeRequest">
+          <label for="blogUrl">블로그 URL:</label>
+          <input type="text" id="blogUrl" name="blogUrl"/>
+          <div class="button-group">
+            <button type="submit" class="subscribe-button">구독하기</button>
           </div>
         </form>
       </div>
@@ -224,6 +239,7 @@ export default defineComponent({
 
     const showLoginModal = ref(false);
     const showSignupModal = ref(false);
+    const showSubscribeModal = ref(false);
     const showSideTab = ref(false);
 
     const isMouseOverSideTab = ref(false);
@@ -256,10 +272,10 @@ export default defineComponent({
         if (!isMouseOverRightEdge) {
           moveScreen('left'); // 화면 왼쪽으로 이동
           if (isModalOpen === false) {
-            showLoginModal.value = true; // 모달 열기
+            showSubscribeModal.value = true; // 블로그 구독 모달 열기
             isModalOpen = true; // 모달 상태 열림으로 설정
           } else {
-            showLoginModal.value = false; // 모달 닫기
+            showSubscribeModal.value = false; // 블로그 구독 모달 닫기
             isModalOpen = false; // 모달 상태 닫기로 설정
           }
           isMouseOverRightEdge = true; // 마우스 위치 업데이트
@@ -271,9 +287,18 @@ export default defineComponent({
       }
 
       if (clientX <= edgeThreshold) {
-        // 왼쪽 끝으로 마우스를 이동했을 때 모달을 닫기
-        moveScreen('right'); // 화면 오른쪽으로 이동
-        isMouseOverLeftEdge = true;
+        // 왼쪽 끝으로 마우스를 이동했을 때
+        if(!isMouseOverLeftEdge){
+          moveScreen('right'); // 화면 오른쪽으로 이동
+          if (isModalOpen === false) {
+            showLoginModal.value = true; // 로그인 모달 열기
+            isModalOpen = true; // 모달 상태 열림으로 설정
+          } else {
+            showLoginModal.value = false; // 로그인 모달 닫기
+            isModalOpen = false; // 모달 상태 닫기로 설정
+          }
+          isMouseOverLeftEdge = true; // 마우스 위치 업데이트
+        }
       } else if (isMouseOverLeftEdge) {
         // 왼쪽 끝 임계값을 벗어났을 때
         resetScreenPosition(); // 화면 위치 초기화
@@ -328,6 +353,24 @@ export default defineComponent({
           });
     };
 
+    // 블로그 구독 요청
+    const handleSubscribeRequest = async (event: Event) => {
+      event.preventDefault();
+      const blogUrl = (document.getElementById('blogUrl') as HTMLInputElement).value;
+
+      fetchWrapper.post("/api/subscriptions/blogs", {
+        url: blogUrl
+      })
+          .then(() => {
+            alert("블로그 구독이 완료되었습니다.");
+            showSubscribeModal.value = false;
+          })
+          .catch((error) => {
+            console.log(error);
+            alert(error);
+          });
+    };
+
     // 화면 이동 함수
     const moveScreen = (direction: 'left' | 'right') => {
       document.getElementById('app')!.style.transform = direction === 'left' ? 'translateX(-100px)' : 'translateX(100px)';
@@ -357,8 +400,10 @@ export default defineComponent({
       handleOpenSignup,
       handleSignupRequest,
       handleSigninRequest,
+      handleSubscribeRequest,
       showLoginModal,
       showSignupModal,
+      showSubscribeModal,
       showSideTab,
       handleMouseOverSideTab,
       handleMouseLeaveSideTab,
@@ -397,8 +442,8 @@ export default defineComponent({
   fill: black;
 }
 
-.login-modal, .signup-modal {
-  /* 로그인, 회원가입 모달 스타일 */
+.login-modal, .signup-modal, .subscribe-modal {
+  /* 로그인, 회원가입, 블로그 구독 모달 스타일 */
   position: fixed;
   top: 50%;
   left: 50%;
@@ -446,7 +491,8 @@ export default defineComponent({
 }
 
 .signup-button,
-.login-button {
+.login-button,
+.subscribe-button {
   width: 48%;
   padding: 10px;
   background-color: #007bff;
