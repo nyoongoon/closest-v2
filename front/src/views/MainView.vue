@@ -48,7 +48,7 @@
           <label for="password">비밀번호:</label>
           <input type="password" id="password" name="password"/>
           <label for="confirm-password">비밀번호 확인:</label>
-          <input type="confirm-password" id="confirm-password" name="confirm-password"/>
+          <input type="password" id="confirm-password" name="confirm-password"/>
           <div class="button-group">
             <button type="submit" class="signup-button signup-request-button">회원가입</button>
           </div>
@@ -61,10 +61,10 @@
 </template>
 
 <script lang="ts">
-import {defineComponent, onMounted, reactive, ref} from 'vue';
-import axios from "axios";
-import {useRouter} from "vue-router";
-import {useAuthStore} from "@/stores";
+import { defineComponent, onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores';
+import { fetchWrapper } from '@/utils/fetch-wrapper';
 
 // Node 인터페이스 정의
 interface Node {
@@ -79,10 +79,10 @@ interface Node {
 export default defineComponent({
   name: 'App',
   setup() {
-    const router = useRouter(); //라우터
+    const router = useRouter(); // 라우터
     const authStore = useAuthStore();
 
-    const centerNode = reactive({x: window.innerWidth / 2, y: window.innerHeight / 2}); // 중앙 노드의 위치
+    const centerNode = reactive({ x: window.innerWidth / 2, y: window.innerHeight / 2 }); // 중앙 노드의 위치
     const centerNodeSize = 60; // 중앙 노드의 크기
     const nodeSize = 40; // 서브노드의 크기
     const minDistance = 200; // 중앙에서 최소 거리
@@ -135,8 +135,33 @@ export default defineComponent({
       };
     };
 
-    const nodes = reactive<Node[]>(Array.from({length: 10}, createNode)); // 서브노드 배열 생성
+    const nodes = reactive<Node[]>(Array.from({ length: 10 }, createNode)); // 서브노드 배열 생성
     const visibleNodes = ref<Node[]>([]); // 화면에 보이는 노드 배열
+
+    const fetchBlogSubscriptions = async () => {
+      try {
+        const blogs = await fetchWrapper.get('/api/subscriptions/blogs/close');
+
+        // Update nodes and visibleNodes with the fetched data
+        nodes.splice(0, nodes.length, ...blogs.map(createNodeFromBlog));
+        visibleNodes.value = nodes.slice(0, visibleNodeCount.value);
+      } catch (error) {
+        console.error('Error fetching blog subscriptions:', error);
+      }
+    };
+
+    const createNodeFromBlog = (blog: any): Node => {
+      const initialPosition = getRandomPosition();
+      const bounds = getInitialBounds(initialPosition, range);
+      return {
+        position: initialPosition,
+        velocity: getRandomVelocity(),
+        initialPosition,
+        bounds,
+        style: {},
+        isStopped: false,
+      };
+    };
 
     let intervalId: number | null = null;
 
@@ -224,7 +249,7 @@ export default defineComponent({
     const edgeThreshold = 150; // 좌우 끝으로 인식할 임계값
 
     const handleMouseMove = (event: MouseEvent) => {
-      const {clientX} = event;
+      const { clientX } = event;
 
       if (clientX >= window.innerWidth - edgeThreshold) {
         // 오른쪽 끝으로 마우스를 이동했을 때
@@ -257,47 +282,29 @@ export default defineComponent({
     };
 
     // 로그인 요청
-    // const handleSigninRequest = async (event: Event) => {
-    //   event.preventDefault();
-    //   const userEmail = (document.getElementById('userEmail') as HTMLInputElement).value;
-    //   const password = (document.getElementById('password') as HTMLInputElement).value;
-    //   axios
-    //       .post("/api/auth/signin", {
-    //         userEmail: userEmail,
-    //         password: password
-    //       })
-    //       .then(() => {
-    //         alert("로그인이 완료되었습니다.");
-    //         showLoginModal.value = false;
-    //       });
-    // }
     const handleSigninRequest = async (event: Event) => {
       event.preventDefault();
-      const userEmail = (document.getElementById('userEmail') as HTMLInputElement).value;
+      const email = (document.getElementById('userEmail') as HTMLInputElement).value;
       const password = (document.getElementById('password') as HTMLInputElement).value;
 
-      return authStore.login(userEmail, password)
+      return authStore.login(email, password)
           .then(() => {
             alert("로그인이 완료되었습니다.");
             showLoginModal.value = false;
-            // redirect to previous url or default to home page
-            // router.push(route.query.returnUrl || '/');
-          })
-      // .catch(error => setErrors({apiError: error}));
-    }
-
+          });
+    };
 
     // 회원가입 버튼 클릭 핸들러
     const handleOpenSignup = () => {
       // 회원가입 모달로 변경
       showLoginModal.value = false;
       showSignupModal.value = true;
-    }
+    };
 
     // 회원가입 요청
     const handleSignupRequest = async (event: Event) => {
       event.preventDefault();
-      const userEmail = (document.getElementById('userEmail') as HTMLInputElement).value;
+      const email = (document.getElementById('userEmail') as HTMLInputElement).value;
       const password = (document.getElementById('password') as HTMLInputElement).value;
       const confirmPassword = (document.getElementById('confirm-password') as HTMLInputElement).value;
 
@@ -306,18 +313,17 @@ export default defineComponent({
         return;
       }
 
-
-      axios
-          .post("/api/auth/signup", {
-            userEmail: userEmail,
-            password: password
-          })
+      fetchWrapper.post("/api/member/auth/signup", {
+        email: email,
+        password: password,
+        confirmPassword: confirmPassword
+      })
           .then(() => {
-            // router.replace({name: "example"}) //뒤로가기 못하게 수정
             alert("회원가입이 완료되었습니다.");
             showSignupModal.value = false;
           })
-          .catch((error)=>{
+          .catch((error) => {
+            console.log(error);
             alert(error);
           });
     };
@@ -336,6 +342,7 @@ export default defineComponent({
 
     // 컴포넌트 마운트 시 실행되는 함수
     onMounted(() => {
+      fetchBlogSubscriptions();
       startMovement();
       window.addEventListener('mousemove', handleMouseMove);
     });

@@ -4,7 +4,7 @@ import {fetchWrapper} from '@/utils';
 import {useRouter} from "vue-router";
 
 const router = useRouter();
-const baseUrl = `/api/auth`;
+const baseUrl = `/api/member/auth`;
 
 type User = {
     id: number
@@ -21,9 +21,9 @@ export const useAuthStore = defineStore({
         refreshTokenTimeout: null
     }),
     actions: {
-        async login(username: string, password: string) {
+        async login(email: string, password: string) {
             this.user = await fetchWrapper.post(`${baseUrl}/signin`, {
-                username,
+                email,
                 password
             }, {credentials: 'include'});
             this.startRefreshTokenTimer();
