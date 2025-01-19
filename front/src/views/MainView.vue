@@ -258,11 +258,12 @@ export default defineComponent({
     };
 
     // 마우스 이동 핸들러
-    let isModalOpen = false; // 모달 오픈 여부
     let isMouseOverRightEdge = false; // 오른쪽 끝 임계값에 마우스가 있는지 여부
     let isMouseOverLeftEdge = false; // 오른쪽 끝 임계값에 마우스가 있는지 여부
 
     const edgeThreshold = 150; // 좌우 끝으로 인식할 임계값
+    let leftEdgeCounter = 0;
+    let rightEdgeCounter = 0;
 
     const handleMouseMove = (event: MouseEvent) => {
       const { clientX } = event;
@@ -271,14 +272,11 @@ export default defineComponent({
         // 오른쪽 끝으로 마우스를 이동했을 때
         if (!isMouseOverRightEdge) {
           moveScreen('left'); // 화면 왼쪽으로 이동
-          if (isModalOpen === false) {
-            showSubscribeModal.value = true; // 블로그 구독 모달 열기
-            isModalOpen = true; // 모달 상태 열림으로 설정
-          } else {
-            showSubscribeModal.value = false; // 블로그 구독 모달 닫기
-            isModalOpen = false; // 모달 상태 닫기로 설정
-          }
+          showLoginModal.value = false; // 로그인 모달 닫기
+          showSubscribeModal.value = true; // 블로그 구독 모달 열기
           isMouseOverRightEdge = true; // 마우스 위치 업데이트
+          rightEdgeCounter++;
+          leftEdgeCounter = 0;
         }
       } else if (isMouseOverRightEdge) {
         // 오른쪽 끝 임계값을 벗어났을 때
@@ -288,21 +286,29 @@ export default defineComponent({
 
       if (clientX <= edgeThreshold) {
         // 왼쪽 끝으로 마우스를 이동했을 때
-        if(!isMouseOverLeftEdge){
+        if (!isMouseOverLeftEdge) {
           moveScreen('right'); // 화면 오른쪽으로 이동
-          if (isModalOpen === false) {
-            showLoginModal.value = true; // 로그인 모달 열기
-            isModalOpen = true; // 모달 상태 열림으로 설정
-          } else {
-            showLoginModal.value = false; // 로그인 모달 닫기
-            isModalOpen = false; // 모달 상태 닫기로 설정
-          }
+          showSubscribeModal.value = false; // 블로그 구독 모달 닫기
+          showLoginModal.value = true; // 로그인 모달 열기
           isMouseOverLeftEdge = true; // 마우스 위치 업데이트
+          leftEdgeCounter++;
+          rightEdgeCounter = 0;
         }
       } else if (isMouseOverLeftEdge) {
         // 왼쪽 끝 임계값을 벗어났을 때
         resetScreenPosition(); // 화면 위치 초기화
         isMouseOverLeftEdge = false; // 마우스 위치 업데이트
+      }
+
+      // 모달이 두 번 열리면 닫기
+      if (leftEdgeCounter >= 2) {
+        showLoginModal.value = false;
+        leftEdgeCounter = 0;
+      }
+
+      if (rightEdgeCounter >= 2) {
+        showSubscribeModal.value = false;
+        rightEdgeCounter = 0;
       }
     };
 
