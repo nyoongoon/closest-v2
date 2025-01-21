@@ -10,12 +10,12 @@ import static com.example.closestv2.api.exception.ExceptionMessageConstants.FAIL
 @Repository
 public class BlogAuthCodeRepository {
 
-    @Cacheable(value = "blogAuthCode", key = "#memberId")
-    public BlogAuthCode findByMemberId(long memberId){
+    @Cacheable(value = "blogAuthCode", key = "#memberEmail")
+    public BlogAuthCode findByMemberEmail(String memberEmail){
         throw new IllegalArgumentException(FAIL_BLOG_AUTHENTICATE);
     }
 
-    @CachePut(value = "blogAuthCode", key = "#blogAuthCode.memberId()")
+    @CachePut(value = "blogAuthCode", key = "#blogAuthCode.memberEmail()")
     public BlogAuthCode save(BlogAuthCode blogAuthCode){
         return blogAuthCode;
     }

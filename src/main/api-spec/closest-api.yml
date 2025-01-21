@@ -286,7 +286,7 @@ paths:
                   format: email
                 password:
                   type: string
-                conform_Password:
+                confirmPassword:
                   type: string
               required:
                 - email

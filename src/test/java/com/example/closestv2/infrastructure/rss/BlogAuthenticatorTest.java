@@ -13,7 +13,7 @@ import java.net.URL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class BlogAuthenticatorTest {
-    private final long ANY_MEMBER_ID = 1L;
+    private final String ANY_MEMBER_EMAIL = "abc@naver.com";
     private final URL ANY_RSS_URL = URI.create("https://example.com/rss").toURL();
 
     private BlogAuthenticator blogAuthenticator;
@@ -31,9 +31,9 @@ class BlogAuthenticatorTest {
     void createAuthCode() {
         //given
         //when
-        BlogAuthCode authCode = blogAuthenticator.createAuthCode(ANY_MEMBER_ID, ANY_RSS_URL);
+        BlogAuthCode authCode = blogAuthenticator.createAuthCode(ANY_MEMBER_EMAIL, ANY_RSS_URL);
         //then
-        assertThat(authCode.memberId()).isEqualTo(ANY_MEMBER_ID);
+        assertThat(authCode.memberEmail()).isEqualTo(ANY_MEMBER_EMAIL);
         assertThat(authCode.rssUrl()).isEqualTo(ANY_RSS_URL);
         assertThat(authCode.authMessage()).isNotNull();
     }
@@ -44,7 +44,7 @@ class BlogAuthenticatorTest {
     void authenticate() {
         //given
         String authMessage = "ABC123";
-        BlogAuthCode blogAuthCode = new BlogAuthCode(ANY_MEMBER_ID, ANY_RSS_URL, authMessage);
+        BlogAuthCode blogAuthCode = new BlogAuthCode(ANY_MEMBER_EMAIL, ANY_RSS_URL, authMessage);
         String blogTitle = "ABC123";
         //when
         boolean isAuthenticated = blogAuthenticator.authenticate(blogAuthCode, blogTitle);
@@ -57,7 +57,7 @@ class BlogAuthenticatorTest {
     void authenticateFail() {
         //given
         String authMessage = "ABC123";
-        BlogAuthCode blogAuthCode = new BlogAuthCode(ANY_MEMBER_ID, ANY_RSS_URL, authMessage);
+        BlogAuthCode blogAuthCode = new BlogAuthCode(ANY_MEMBER_EMAIL, ANY_RSS_URL, authMessage);
         String blogTitle = "ABC456";
         //when
         boolean isAuthenticated = blogAuthenticator.authenticate(blogAuthCode, blogTitle);

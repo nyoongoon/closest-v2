@@ -15,8 +15,8 @@ public class MyBlogSaveListener {
 
     @EventListener
     public void onMyBlogCreationEvent(MyBlogSaveEvent event) {
-        long memberId = event.memberId();
+        String memberEmail = event.memberEmail();
         URL blogUrl = event.blogUrl();
-        myBlogSaveService.saveMyBlog(memberId, blogUrl);
+        myBlogSaveService.saveMyBlog(memberEmail, blogUrl);
     }
 }

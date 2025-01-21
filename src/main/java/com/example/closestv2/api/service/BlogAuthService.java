@@ -31,10 +31,10 @@ public class BlogAuthService implements BlogAuthUsecase {
     private final BlogAuthCodeRepository blogAuthCodeRepository;
 
     @Override
-    public AuthMessageResponse createBlogAuthMessage(long memberId, URI rssUri) {
+    public AuthMessageResponse createBlogAuthMessage(String memberEmail, URI rssUri) {
         try {
             Feed feed = feedClient.getFeed(rssUri.toURL());
-            BlogAuthCode blogAuthCode = blogAuthenticator.createAuthCode(memberId, feed.getRssUrl());
+            BlogAuthCode blogAuthCode = blogAuthenticator.createAuthCode(memberEmail, feed.getRssUrl());
             blogAuthCodeRepository.save(blogAuthCode);
             return new AuthMessageResponse().authMessage(blogAuthCode.authMessage());
         } catch (MalformedURLException e) {
@@ -48,8 +48,8 @@ public class BlogAuthService implements BlogAuthUsecase {
      * MyBlogSave 이벤트 발생
      */
     @Override
-    public void verifyBlogAuthMessage(long memberId) {
-        BlogAuthCode blogAuthCode = blogAuthCodeRepository.findByMemberId(memberId);
+    public void verifyBlogAuthMessage(String memberEmail) {
+        BlogAuthCode blogAuthCode = blogAuthCodeRepository.findByMemberEmail(memberEmail);
         URL rssUrl = blogAuthCode.rssUrl();
         Feed feed;
         try {
@@ -67,7 +67,7 @@ public class BlogAuthService implements BlogAuthUsecase {
 
         if (isAuthenticated) {
             // MyBlog 생성 이벤트 발행
-            eventPublisher.publishEvent(new MyBlogSaveEvent(memberId, feed.getBlogUrl()));
+            eventPublisher.publishEvent(new MyBlogSaveEvent(memberEmail, feed.getBlogUrl()));
         } else {
             throw new IllegalArgumentException(FAIL_BLOG_AUTHENTICATE);
         }

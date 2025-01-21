@@ -7,7 +7,7 @@ import java.net.URI;
 
 @Service
 public interface BlogAuthUsecase {
-    AuthMessageResponse createBlogAuthMessage(long memberId, URI ussUri);
+    AuthMessageResponse createBlogAuthMessage(String memberEmail, URI ussUri);
 
-    void verifyBlogAuthMessage(long memberId);
+    void verifyBlogAuthMessage(String memberEmail);
 }

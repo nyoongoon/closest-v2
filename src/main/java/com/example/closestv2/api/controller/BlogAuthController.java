@@ -19,16 +19,16 @@ public class BlogAuthController implements BlogAuthApi {
     @Override
     public ResponseEntity<AuthMessageResponse> blogAuthMessageGet(URI rssUri) {
         Authentication authentication = SecurityContextHolder.getContextHolderStrategy().getContext().getAuthentication();
-        Object principal = authentication.getPrincipal();
-        AuthMessageResponse blogAuthMessage = blogAuthUsecase.createBlogAuthMessage((long) principal, rssUri);
+        String email = (String) authentication.getPrincipal();;
+        AuthMessageResponse blogAuthMessage = blogAuthUsecase.createBlogAuthMessage(email, rssUri);
         return ResponseEntity.ok(blogAuthMessage);
     }
 
     @Override
     public ResponseEntity<Void> blogAuthVerificationPost() {
         Authentication authentication = SecurityContextHolder.getContextHolderStrategy().getContext().getAuthentication();
-        Object principal = authentication.getPrincipal();
-        blogAuthUsecase.verifyBlogAuthMessage((long) principal);
+        String email = (String) authentication.getPrincipal();;
+        blogAuthUsecase.verifyBlogAuthMessage(email);
         return ResponseEntity.ok().build();
     }
 }

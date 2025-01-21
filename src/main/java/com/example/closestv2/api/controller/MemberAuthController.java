@@ -29,7 +29,7 @@ public class MemberAuthController implements MemberAuthApi {
     }
 
     private MemberAuthSignupPostServiceRequest toServiceRequest(MemberAuthSignupPostRequest request) {
-        return new MemberAuthSignupPostServiceRequest(request.getEmail(), request.getPassword(), request.getConformPassword());
+        return new MemberAuthSignupPostServiceRequest(request.getEmail(), request.getPassword(), request.getConfirmPassword());
     }
 
     @Override
@@ -40,12 +40,14 @@ public class MemberAuthController implements MemberAuthApi {
 
         ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", accessToken.getTokenValue())
                 .httpOnly(true)
+                .sameSite("Strict")
                 .maxAge(60 * 30)
                 .path("/")
                 .build();
 
         ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken.getTokenValue())
                 .httpOnly(true)
+                .sameSite("Strict")
                 .maxAge(60 * 60 * 24 * 30)
                 .path("/")
                 .build();

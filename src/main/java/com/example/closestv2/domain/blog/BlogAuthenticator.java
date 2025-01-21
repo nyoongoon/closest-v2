@@ -13,9 +13,9 @@ public class BlogAuthenticator {
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    public BlogAuthCode createAuthCode(long memberId, URL rssUrl) {
+    public BlogAuthCode createAuthCode(String memberEmail, URL rssUrl) {
         String authMessage = generateRandomAuthMessage();
-        return new BlogAuthCode(memberId, rssUrl, authMessage);
+        return new BlogAuthCode(memberEmail, rssUrl, authMessage);
     }
 
     public boolean authenticate(BlogAuthCode blogAuthCode, String blogTitle) {

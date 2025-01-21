@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 class MyBlogSaveServiceTest {
-    private final long ANY_MEMBER_ID = 1L;
+    private final String ANY_MEMBER_EMAIL = "abc@naver.com";
     private final URL ANY_BLOG_URL = URI.create("http://example.com").toURL();
     private final String ANY_USER_EMAIL = "abc@naver.com";
     private final String ANY_PASSWORD = "Abc1234!!";
@@ -34,7 +34,7 @@ class MyBlogSaveServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         Optional<MemberRoot> memberRoot = Optional.of(MemberRoot.create(ANY_USER_EMAIL, ANY_PASSWORD, ANY_NICK_NAME));
-        when(memberRepository.findById(ANY_MEMBER_ID)).thenReturn(memberRoot);
+        when(memberRepository.findByMemberInfoUserEmail(ANY_MEMBER_EMAIL)).thenReturn(memberRoot);
         myBlogSaveService = new MyBlogSaveService(memberRepository);
     }
 
@@ -43,9 +43,9 @@ class MyBlogSaveServiceTest {
     void createMyBlog() {
         //given
         //when
-        myBlogSaveService.saveMyBlog(ANY_MEMBER_ID, ANY_BLOG_URL);
+        myBlogSaveService.saveMyBlog(ANY_MEMBER_EMAIL, ANY_BLOG_URL);
         //then
-        MemberRoot memberRoot = memberRepository.findById(ANY_MEMBER_ID).orElseThrow();
+        MemberRoot memberRoot = memberRepository.findByMemberInfoUserEmail(ANY_MEMBER_EMAIL).orElseThrow();
         assertThat(memberRoot.getMyBlog().getBlogUrl()).isEqualTo(ANY_BLOG_URL);
         assertThat(memberRoot.getMyBlog().getMyBlogVisitCount()).isEqualTo(0L);
     }
