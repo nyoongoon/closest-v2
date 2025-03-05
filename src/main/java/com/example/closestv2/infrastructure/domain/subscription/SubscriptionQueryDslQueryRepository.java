@@ -16,8 +16,17 @@ public class SubscriptionQueryDslQueryRepository implements SubscriptionQueryRep
     private final JPAQueryFactory queryFactory;
 
     @Override
+    public List<SubscriptionRoot> findAllOrderByVisitCountDesc(int page, int size) {
+        return queryFactory.selectFrom(subscriptionRoot)
+                .orderBy(subscriptionRoot.subscriptionInfo.subscriptionVisitCount.desc())
+                .offset(page * size)
+                .limit(size)
+                .fetch();
+    }
+
+    @Override
     public List<SubscriptionRoot> findByMemberIdVisitCountDesc(String memberEmail, int page, int size) {
-                return queryFactory.selectFrom(subscriptionRoot)
+        return queryFactory.selectFrom(subscriptionRoot)
                 .where(subscriptionRoot.subscriptionInfo.memberEmail.eq(memberEmail))
                 .orderBy(subscriptionRoot.subscriptionInfo.subscriptionVisitCount.desc())
                 .offset(page * size)

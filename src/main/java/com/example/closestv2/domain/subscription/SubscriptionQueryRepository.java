@@ -6,6 +6,7 @@ import java.util.List;
 
 @Repository
 public interface SubscriptionQueryRepository {
+    List<SubscriptionRoot> findAllOrderByVisitCountDesc(int page, int size);
     List<SubscriptionRoot> findByMemberIdVisitCountDesc(String memberEmail, int page, int size);
 
     List<SubscriptionRoot> findByMemberIdPublishedDateTimeDesc(String memberEmail, int page, int size);

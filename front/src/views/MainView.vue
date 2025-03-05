@@ -150,7 +150,7 @@ export default defineComponent({
       };
     };
 
-    const nodes = reactive<Node[]>(Array.from({ length: 10 }, createNode)); // 서브노드 배열 생성
+    const nodes = reactive<Node[]>(Array.from({ length: 0 }, createNode)); // 서브노드 배열 생성
     const visibleNodes = ref<Node[]>([]); // 화면에 보이는 노드 배열
 
     const fetchBlogSubscriptions = async () => {

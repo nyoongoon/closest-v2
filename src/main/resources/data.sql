@@ -1133,7 +1133,7 @@ VALUES
     ('https://blog.dglee.co.kr/rss', 'https://blog.dglee.co.kr/rss', '제목1130', '작가1130', '2000-01-01 00:00:00', 0),
     ('https://reoim.tistory.com/rss', 'https://reoim.tistory.com/rss', '제목1131', '작가1131', '2000-01-01 00:00:00', 0),
     ('https://rss.blog.naver.com/edy5016.xml', 'https://rss.blog.naver.com/edy5016.xml', '제목1132', '작가1132', '2000-01-01 00:00:00', 0),
-    ('https://jojoldu.tistory.com/rss', 'https://jojoldu.tistory.com/rss', '제목1133', '작가1133', '2000-01-01 00:00:00', 0),
+    ('https://jojoldu.tistory.com/rss', 'https://jojoldu.tistory.com/rss', '제목1133', '작가1133', '2000-01-01 00:00:00', 1000),
     ('https://dongwooklee96.github.io/index.xml', 'https://dongwooklee96.github.io/index.xml', '제목1134', '작가1134', '2000-01-01 00:00:00', 0),
     ('https://blog.wonizz.com/feed/', 'https://blog.wonizz.com/feed/', '제목1135', '작가1135', '2000-01-01 00:00:00', 0),
     ('https://spookyjelly.tistory.com/rss', 'https://spookyjelly.tistory.com/rss', '제목1136', '작가1136', '2000-01-01 00:00:00', 0),

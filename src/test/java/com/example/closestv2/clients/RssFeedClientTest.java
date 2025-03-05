@@ -31,8 +31,9 @@ import static org.mockserver.model.HttpResponse.response;
 
 class RssFeedClientTest {
     private final URL ANY_RSS_URL = URI.create("http://localhost:8888/rss").toURL();
-    private final URL ANY_BLOG_URL = URI.create("http://localhost:8888/blog").toURL();
+    private final URL RSS_URL_WITHOUT_POSTS = URI.create("http://localhost:8888/rss/no-posts").toURL();
     private final String RSS_FEED_RESPONSE = FileUtil.readFileAsString("rssResponse.xml");
+    private final String RSS_FEED_RESPONSE_WITHOUT_POSTS = FileUtil.readFileAsString("rssResponseWithoutPosts.xml");;
     private final String ANY_BLOG_TITLE = "제목";
     private final String ANY_AUTHOR = "작가";
     private final String POST_ONE_TITLE = "포스트 제목 1";
@@ -52,7 +53,8 @@ class RssFeedClientTest {
     @BeforeEach
     void setUp() {
         mockServer = ClientAndServer.startClientAndServer(8888);
-        new MockServerClient("localhost", 8888)
+        MockServerClient mockServerClient = new MockServerClient("localhost", 8888);
+        mockServerClient
                 .when(
                         request()
                                 .withMethod("GET")
@@ -62,6 +64,17 @@ class RssFeedClientTest {
                         response()
                                 .withHeader(new Header("Content-Type", "text/xml;charset=utf-8"))
                                 .withBody(RSS_FEED_RESPONSE)
+                );
+        mockServerClient
+                .when(
+                        request()
+                                .withMethod("GET")
+                                .withPath("/rss/no-posts")
+                )
+                .respond(
+                        response()
+                                .withHeader(new Header("Content-Type", "text/xml;charset=utf-8"))
+                                .withBody(RSS_FEED_RESPONSE_WITHOUT_POSTS)
                 );
         rssFeedClient = new RssFeedClient();
     }
@@ -88,7 +101,7 @@ class RssFeedClientTest {
     void createBlogByLocalDateTimeMIN() {
         //when
 //        Feed feed = Feed.create(ANY_RSS_URL, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_AUTHOR, null);
-        Feed feed = rssFeedClient.getFeed(ANY_RSS_URL);
+        Feed feed = rssFeedClient.getFeed(RSS_URL_WITHOUT_POSTS);
         //given
         BlogRoot blogRoot = feed.toBlogRoot();
         //then

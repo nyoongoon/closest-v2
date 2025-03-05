@@ -2,7 +2,6 @@ package com.example.closestv2.api.service;
 
 import com.example.closestv2.api.usecases.SubscriptionQueryUsecase;
 import com.example.closestv2.domain.subscription.SubscriptionQueryRepository;
-import com.example.closestv2.domain.subscription.SubscriptionRepository;
 import com.example.closestv2.domain.subscription.SubscriptionRoot;
 import com.example.closestv2.models.SubscriptionResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +20,12 @@ public class SubscriptionQueryService implements SubscriptionQueryUsecase {
     private final SubscriptionQueryRepository subscriptionQueryRepository;
 
     @Override
+    public List<SubscriptionResponse> getCloseSubscriptionsOfAll() {
+        List<SubscriptionRoot> subscriptionRoots = subscriptionQueryRepository.findAllOrderByVisitCountDesc(0, 20);
+        return extractSubscriptionResponses(subscriptionRoots, new ArrayList<>());
+    }
+
+    @Override
     public List<SubscriptionResponse> getCloseSubscriptions(String memberEmail) {
         List<SubscriptionRoot> subscriptionRoots = subscriptionQueryRepository.findByMemberIdVisitCountDesc(memberEmail, 0, 20);
         return extractSubscriptionResponses(subscriptionRoots, new ArrayList<>());
@@ -35,9 +40,9 @@ public class SubscriptionQueryService implements SubscriptionQueryUsecase {
     private List<SubscriptionResponse> extractSubscriptionResponses(List<SubscriptionRoot> subscriptionRoots, List<SubscriptionResponse> responses) {
         for (SubscriptionRoot subscriptionRoot : subscriptionRoots) {
             URI uri;
-            try{
+            try {
                 uri = subscriptionRoot.getSubscriptionBlog().getBlogUrl().toURI();
-            }catch (URISyntaxException e){
+            } catch (URISyntaxException e) {
                 throw new IllegalStateException(SERVER_ERROR);
             }
             responses.add(

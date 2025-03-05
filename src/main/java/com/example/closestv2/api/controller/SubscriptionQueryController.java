@@ -24,7 +24,8 @@ public class SubscriptionQueryController implements SubscriptionQueryApi {
     public ResponseEntity<List<SubscriptionResponse>> subscriptionsBlogsCloseGet() {
         Authentication authentication = SecurityContextHolder.getContextHolderStrategy().getContext().getAuthentication();
         if(!authentication.isAuthenticated()){
-            throw new IllegalArgumentException(MEMBER_NOT_FOUND);
+            List<SubscriptionResponse> closeSubscriptionsOfAll = subscriptionQueryUsecase.getCloseSubscriptionsOfAll();
+            return ResponseEntity.ok(closeSubscriptionsOfAll);
         }
         String email = (String) authentication.getPrincipal();
         List<SubscriptionResponse> closeSubscriptions = subscriptionQueryUsecase.getCloseSubscriptions(email);
