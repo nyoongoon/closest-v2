@@ -352,10 +352,6 @@ export default defineComponent({
           .then(() => {
             alert("회원가입이 완료되었습니다.");
             showSignupModal.value = false;
-          })
-          .catch((error) => {
-            console.log(error);
-            alert(error);
           });
     };
 
@@ -364,7 +360,8 @@ export default defineComponent({
       event.preventDefault();
       const blogUrl = (document.getElementById('blogUrl') as HTMLInputElement).value;
 
-      fetchWrapper.post("/api/subscriptions/blogs", {
+
+      fetchWrapper.post("/api/subscriptions", {
         url: blogUrl
       })
           .then(() => {

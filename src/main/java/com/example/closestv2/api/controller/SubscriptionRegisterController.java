@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -19,8 +20,8 @@ public class SubscriptionRegisterController implements SubscriptionRegisterApi {
     @Override
     public ResponseEntity<Void> subscriptionsPost(SubscriptionsPostRequest subscriptionsPostRequest) {
         Authentication authentication = SecurityContextHolder.getContextHolderStrategy().getContext().getAuthentication();
-        String memberEmail = (String) authentication.getPrincipal();
-        SubscriptionsPostServiceRequest serviceRequest = toServiceRequest(memberEmail, subscriptionsPostRequest);
+        User user = (User) authentication.getPrincipal();
+        SubscriptionsPostServiceRequest serviceRequest = toServiceRequest(user.getUsername(), subscriptionsPostRequest);
         subscriptionRegisterUsecase.registerSubscription(serviceRequest);
         return ResponseEntity.ok().build();
     }
@@ -35,8 +36,8 @@ public class SubscriptionRegisterController implements SubscriptionRegisterApi {
     @Override
     public ResponseEntity<Void> subscriptionsSubscriptionsIdDelete(Long subscriptionsId) {
         Authentication authentication = SecurityContextHolder.getContextHolderStrategy().getContext().getAuthentication();
-        String memberEmail = (String) authentication.getPrincipal();
-        subscriptionRegisterUsecase.unregisterSubscription(memberEmail, subscriptionsId);
+        User user = (User) authentication.getPrincipal();
+        subscriptionRegisterUsecase.unregisterSubscription(user.getUsername(), subscriptionsId);
         return ResponseEntity.ok().build();
     }
 }

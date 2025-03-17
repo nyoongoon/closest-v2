@@ -62,9 +62,11 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             Token newAccessToken = tokenProvider.issueToken(refreshTokenOptional.get());
             authenticate(newAccessToken);
             addAccessTokenToCookie(response, newAccessToken); //todo refreshToken renewal?
-        } else {
-            throw new IOException();
         }
+        // todo 권한 없이 넘기면 어차피 에러 터트리지 않아도 403 리턴
+//        else {
+//            throw new IOException();
+//        }
 
         filterChain.doFilter(request, response);
     }

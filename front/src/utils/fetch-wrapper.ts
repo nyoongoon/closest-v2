@@ -24,11 +24,12 @@ function request(method: string) {
             requestOptions.credentials = credentials;
         }
         return fetch(url, requestOptions)
-          .then(handleResponse)
-          .catch((error)=>{
-              console.log(error);
-              alert(error.response.data.message);
-          });
+            .then(handleResponse)
+            .catch((error) => {
+                console.log(error);
+                alert(error);
+                alert(error.response.data.message);
+            });
     }
 }
 

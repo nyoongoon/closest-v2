@@ -16,7 +16,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 /**
  * 시큐리티 설정
@@ -35,11 +34,10 @@ public class SecurityConfig {
      * @return
      */
     @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {  //아래의 filterChain 에서도 관리 가능
+    public WebSecurityCustomizer webSecurityCustomizer() { //아래의 filterChain 에서도 관리 가능
         return web -> web.ignoring()
                 .requestMatchers("/favicon")
-                .requestMatchers("/error")
-                .requestMatchers(new AntPathRequestMatcher("/h2-console/**"));
+                .requestMatchers("/error");
     }
 
     /**
@@ -57,9 +55,16 @@ public class SecurityConfig {
                 .csrf(CsrfConfigurer::disable) // -> rest api
                 .sessionManagement(configurer -> configurer
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))  //jwt는 세션을 갖지 않음
-                .authorizeHttpRequests((request) ->
+                .authorizeHttpRequests(request ->
                         request
-                                .anyRequest().permitAll()) // --> 이슈해결 이것 없으면 PreAuthorize 적용 안됐음
+                                .requestMatchers(
+                                        "/h2-console/**"
+                                        , "/member/auth/**"
+                                )
+                                .permitAll()
+                                .anyRequest()
+                                .authenticated()
+                ) // --> 이슈해결 이것 없으면 PreAuthorize 적용 안됐음
                 .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

@@ -18,8 +18,8 @@ spring:
       default_batch_fetch_size: 100
 #    show-sql: true
     show-sql: false
-
-logging:
-  level:
-    org:
-      springframework: warn
+#
+#logging:
+#  level:
+#    org:
+#      springframework: info
