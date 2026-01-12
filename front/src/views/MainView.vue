@@ -28,7 +28,7 @@ To achieve this, you need to add a new modal for "블로그 구독하기" and mo
         @mouseleave="handleMouseLeave(index)"
     ></div>
     <div v-if="showLoginModal" class="login-modal">
-      <div class="modal-content">
+      <div v-if="!isLoggedIn" class="modal-content">
         <h2>Login</h2>
         <form @submit.prevent="handleSigninRequest">
           <label for="userEmail">이메일:</label>
@@ -40,6 +40,15 @@ To achieve this, you need to add a new modal for "블로그 구독하기" and mo
             <button type="submit" class="login-button">로그인</button>
           </div>
         </form>
+      </div>
+      <div v-else class="modal-content">
+        <h2>Logout</h2>
+        <div class="logout-info">
+          <p>이미 로그인되어 있습니다.</p>
+          <div class="button-group" style="justify-content: center;">
+            <button @click="handleLogout" class="login-button" style="width: 100%;">로그아웃</button>
+          </div>
+        </div>
       </div>
     </div>
     <div v-if="showSignupModal" class="signup-modal">
@@ -80,6 +89,7 @@ import {defineComponent, onMounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {useAuthStore} from '@/stores';
 import {fetchWrapper} from '@/utils/fetch-wrapper';
+import {getAuthFromCookie} from '@/utils/cookie';
 
 // Node 인터페이스 정의
 interface Node {
@@ -242,6 +252,8 @@ export default defineComponent({
     const showSubscribeModal = ref(false);
     const showSideTab = ref(false);
 
+    const isLoggedIn = ref(!!getAuthFromCookie());
+
     const isMouseOverSideTab = ref(false);
 
     // 사이드탭 마우스 오버 핸들러
@@ -289,7 +301,8 @@ export default defineComponent({
         if (!isMouseOverLeftEdge) {
           moveScreen('right'); // 화면 오른쪽으로 이동
           showSubscribeModal.value = false; // 블로그 구독 모달 닫기
-          showLoginModal.value = true; // 로그인 모달 열기
+          isLoggedIn.value = !!getAuthFromCookie(); // 인증 상태 업데이트
+          showLoginModal.value = true; // 로그인/로그아웃 모달 열기
           isMouseOverLeftEdge = true; // 마우스 위치 업데이트
           leftEdgeCounter++;
           rightEdgeCounter = 0;
@@ -323,6 +336,14 @@ export default defineComponent({
             alert("로그인이 완료되었습니다.");
             showLoginModal.value = false;
           });
+    };
+
+    // 로그아웃 요청
+    const handleLogout = () => {
+      authStore.logout();
+      isLoggedIn.value = false;
+      showLoginModal.value = false;
+      alert("로그아웃되었습니다.");
     };
 
     // 회원가입 버튼 클릭 핸들러
@@ -404,10 +425,12 @@ export default defineComponent({
       handleSignupRequest,
       handleSigninRequest,
       handleSubscribeRequest,
+      handleLogout,
       showLoginModal,
       showSignupModal,
       showSubscribeModal,
       showSideTab,
+      isLoggedIn,
       handleMouseOverSideTab,
       handleMouseLeaveSideTab,
       visibleNodes,
