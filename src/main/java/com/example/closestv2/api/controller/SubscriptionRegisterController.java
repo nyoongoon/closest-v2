@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 public class SubscriptionRegisterController implements SubscriptionRegisterApi {
-    private SubscriptionRegisterUsecase subscriptionRegisterUsecase;
+    private final SubscriptionRegisterUsecase subscriptionRegisterUsecase;
 
     @Override
     public ResponseEntity<Void> subscriptionsPost(SubscriptionsPostRequest subscriptionsPostRequest) {

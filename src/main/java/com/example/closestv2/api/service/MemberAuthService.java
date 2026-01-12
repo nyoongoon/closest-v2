@@ -35,6 +35,7 @@ public class MemberAuthService implements MemberAuthUsecase {
     @Override
     public void signUp(@Valid MemberAuthSignupPostServiceRequest serviceRequest) {
         String email = serviceRequest.getEmail();
+        //todo passwordencorder
         String password = serviceRequest.getPassword();
         String confirmPassword = serviceRequest.getConfirmPassword();
 

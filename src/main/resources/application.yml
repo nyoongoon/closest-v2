@@ -6,7 +6,9 @@ spring:
         web-allow-others: true
       path: /h2-console
   datasource:
-    url: jdbc:h2:mem:test
+    # [변경됨] mem -> file로 변경하여 프로젝트 루트의 data 폴더에 DB파일 저장
+    # AUTO_SERVER=TRUE: 여러 연결 허용 (IntelliJ 등 외부 툴 동시 접속 가능)
+    url: jdbc:h2:file:./data/test;AUTO_SERVER=TRUE
     username: sa
     password:
     driver-class-name: org.h2.Driver
@@ -14,7 +16,7 @@ spring:
     # Whether to defer DataSource initialization until after any EntityManagerFactory beans have been created and initialized."
     defer-datasource-initialization: true # true로 설정해서 EntityManagerFactory(Hibernate) 초기화 이후 data.sql가 실행되도록 변경한다. 디폴트는 false
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
       default_batch_fetch_size: 100
 #    show-sql: true
     show-sql: false

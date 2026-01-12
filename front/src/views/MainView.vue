@@ -62,8 +62,8 @@ To achieve this, you need to add a new modal for "블로그 구독하기" and mo
       <div class="modal-content">
         <h2>블로그 구독하기</h2>
         <form @submit.prevent="handleSubscribeRequest">
-          <label for="blogUrl">블로그 URL:</label>
-          <input type="text" id="blogUrl" name="blogUrl"/>
+          <label for="rssUri">블로그 URL:</label>
+          <input type="text" id="rssUri" name="rssUri"/>
           <div class="button-group">
             <button type="submit" class="subscribe-button">구독하기</button>
           </div>
@@ -76,10 +76,10 @@ To achieve this, you need to add a new modal for "블로그 구독하기" and mo
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores';
-import { fetchWrapper } from '@/utils/fetch-wrapper';
+import {defineComponent, onMounted, reactive, ref} from 'vue';
+import {useRouter} from 'vue-router';
+import {useAuthStore} from '@/stores';
+import {fetchWrapper} from '@/utils/fetch-wrapper';
 
 // Node 인터페이스 정의
 interface Node {
@@ -97,7 +97,7 @@ export default defineComponent({
     const router = useRouter(); // 라우터
     const authStore = useAuthStore();
 
-    const centerNode = reactive({ x: window.innerWidth / 2, y: window.innerHeight / 2 }); // 중앙 노드의 위치
+    const centerNode = reactive({x: window.innerWidth / 2, y: window.innerHeight / 2}); // 중앙 노드의 위치
     const centerNodeSize = 60; // 중앙 노드의 크기
     const nodeSize = 40; // 서브노드의 크기
     const minDistance = 200; // 중앙에서 최소 거리
@@ -150,7 +150,7 @@ export default defineComponent({
       };
     };
 
-    const nodes = reactive<Node[]>(Array.from({ length: 0 }, createNode)); // 서브노드 배열 생성
+    const nodes = reactive<Node[]>(Array.from({length: 0}, createNode)); // 서브노드 배열 생성
     const visibleNodes = ref<Node[]>([]); // 화면에 보이는 노드 배열
 
     const fetchBlogSubscriptions = async () => {
@@ -266,7 +266,7 @@ export default defineComponent({
     let rightEdgeCounter = 0;
 
     const handleMouseMove = (event: MouseEvent) => {
-      const { clientX } = event;
+      const {clientX} = event;
 
       if (clientX >= window.innerWidth - edgeThreshold) {
         // 오른쪽 끝으로 마우스를 이동했을 때
@@ -358,11 +358,11 @@ export default defineComponent({
     // 블로그 구독 요청
     const handleSubscribeRequest = async (event: Event) => {
       event.preventDefault();
-      const blogUrl = (document.getElementById('blogUrl') as HTMLInputElement).value;
+      const rssUri = (document.getElementById('rssUri') as HTMLInputElement).value;
 
 
-      fetchWrapper.post("/api/subscriptions", {
-        url: blogUrl
+      fetchWrapper.post("/api/subscriptions", { // 이 부분
+        rssUri: rssUri
       })
           .then(() => {
             alert("블로그 구독이 완료되었습니다.");
