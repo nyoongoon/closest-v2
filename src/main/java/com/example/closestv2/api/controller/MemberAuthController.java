@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-
 @RestController
 @RequiredArgsConstructor
 public class MemberAuthController implements MemberAuthApi {
@@ -29,7 +28,8 @@ public class MemberAuthController implements MemberAuthApi {
     }
 
     private MemberAuthSignupPostServiceRequest toServiceRequest(MemberAuthSignupPostRequest request) {
-        return new MemberAuthSignupPostServiceRequest(request.getEmail(), request.getPassword(), request.getConfirmPassword());
+        return new MemberAuthSignupPostServiceRequest(request.getEmail(), request.getPassword(),
+                request.getConfirmPassword());
     }
 
     @Override
@@ -39,7 +39,7 @@ public class MemberAuthController implements MemberAuthApi {
         Token refreshToken = tokens.get(TokenType.REFRESH_TOKEN);
 
         ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", accessToken.getTokenValue())
-                .httpOnly(true)
+                .httpOnly(false)
                 .sameSite("Strict")
                 .maxAge(60 * 30)
                 .path("/")

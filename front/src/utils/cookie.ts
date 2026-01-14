@@ -1,12 +1,17 @@
-function saveAuthToCookie(value) {
-    document.cookie = `auth=${value}`;
+function saveAuthToCookie(value: string) {
+    document.cookie = `accessToken=${value}`;
 }
 
-function getAuthFromCookie() {
-    return document.cookie.replace(/(?:(?:^|.*;\s*)auth\s*=\s*([^;]*).*$)|^.*$/, '$1');
+function getAccessTokenFromCookie() {
+    return document.cookie.replace(/(?:(?:^|.*;\s*)accessToken\s*=\s*([^;]*).*$)|^.*$/, '$1');
+}
+
+function deleteCookieFromBrowser(name: string) {
+    document.cookie = name + '=; Max-Age=-99999999; path=/;';
 }
 
 export {
     saveAuthToCookie,
-    getAuthFromCookie,
+    getAccessTokenFromCookie,
+    deleteCookieFromBrowser,
 }

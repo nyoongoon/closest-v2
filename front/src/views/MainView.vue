@@ -89,7 +89,7 @@ import {defineComponent, onMounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {useAuthStore} from '@/stores';
 import {fetchWrapper} from '@/utils/fetch-wrapper';
-import {getAuthFromCookie} from '@/utils/cookie';
+import {getAccessTokenFromCookie, deleteCookieFromBrowser} from '@/utils/cookie';
 
 // Node 인터페이스 정의
 interface Node {
@@ -252,7 +252,7 @@ export default defineComponent({
     const showSubscribeModal = ref(false);
     const showSideTab = ref(false);
 
-    const isLoggedIn = ref(!!getAuthFromCookie());
+    const isLoggedIn = ref(!!getAccessTokenFromCookie());
 
     const isMouseOverSideTab = ref(false);
 
@@ -301,7 +301,7 @@ export default defineComponent({
         if (!isMouseOverLeftEdge) {
           moveScreen('right'); // 화면 오른쪽으로 이동
           showSubscribeModal.value = false; // 블로그 구독 모달 닫기
-          isLoggedIn.value = !!getAuthFromCookie(); // 인증 상태 업데이트
+          isLoggedIn.value = !!getAccessTokenFromCookie(); // 인증 상태 업데이트
           showLoginModal.value = true; // 로그인/로그아웃 모달 열기
           isMouseOverLeftEdge = true; // 마우스 위치 업데이트
           leftEdgeCounter++;
@@ -340,7 +340,8 @@ export default defineComponent({
 
     // 로그아웃 요청
     const handleLogout = () => {
-      authStore.logout();
+      deleteCookieFromBrowser('accessToken');
+      deleteCookieFromBrowser('refreshToken');
       isLoggedIn.value = false;
       showLoginModal.value = false;
       alert("로그아웃되었습니다.");
