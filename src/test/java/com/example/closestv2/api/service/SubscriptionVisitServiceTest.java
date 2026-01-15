@@ -44,7 +44,8 @@ class SubscriptionVisitServiceTest {
     }
 
     private SubscriptionRoot setMock() {
-        SubscriptionRoot subscriptionRoot = SubscriptionRoot.create(ANY_MEMBER_EMAIL, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME);
+        SubscriptionRoot subscriptionRoot = SubscriptionRoot.create(ANY_MEMBER_EMAIL, ANY_BLOG_URL, ANY_BLOG_TITLE,
+                ANY_PUBLISHED_DATE_TIME, null);
         ReflectionTestUtils.setField(subscriptionRoot, "id", 1L);
         when(subscriptionRepository.findById(ANY_SUBSCRIPTIONS_ID)).thenReturn(Optional.of(subscriptionRoot));
         return subscriptionRoot;
@@ -53,11 +54,11 @@ class SubscriptionVisitServiceTest {
     @Test
     @DisplayName("구독 방문 성공 테스트")
     void visitSubscription() {
-        //given
+        // given
         setMock();
-        //when
+        // when
         VisitSubscriptionResponse response = sut.visitSubscription(ANY_SUBSCRIPTIONS_ID);
-        //then
+        // then
         URL redirectUrl = response.getRedirectUrl();
         assertThat(ANY_BLOG_URL).isEqualTo(redirectUrl);
     }
@@ -65,12 +66,12 @@ class SubscriptionVisitServiceTest {
     @Test
     @DisplayName("구독 방문 성공 테스트 - Subscription 조회수가 1 증가한다.")
     void visitSubscriptionIncreaseVitsitCnt() {
-        //given
+        // given
         SubscriptionRoot subscriptionRoot = setMock();
         long beforeVisitCnt = subscriptionRoot.getSubscriptionInfo().getSubscriptionVisitCount();
-        //when
+        // when
         sut.visitSubscription(ANY_SUBSCRIPTIONS_ID);
-        //then
+        // then
         long afterVisitCnt = subscriptionRoot.getSubscriptionInfo().getSubscriptionVisitCount();
         assertThat(beforeVisitCnt + 1).isEqualTo(afterVisitCnt);
     }
@@ -78,11 +79,11 @@ class SubscriptionVisitServiceTest {
     @Test
     @DisplayName("구독 방문 성공 테스트 - redirectUrl을 반환한다.")
     void visitSubscriptionGetRedirectUrl() {
-        //given
+        // given
         SubscriptionRoot subscriptionRoot = setMock();
-        //when
+        // when
         VisitSubscriptionResponse response = sut.visitSubscription(ANY_SUBSCRIPTIONS_ID);
-        //then
+        // then
         URL redirectUrl = response.getRedirectUrl();
         assertThat(subscriptionRoot.getSubscriptionBlog().getBlogUrl()).isEqualTo(redirectUrl);
     }
@@ -90,8 +91,8 @@ class SubscriptionVisitServiceTest {
     @Test
     @DisplayName("구독 방문 실패 테스트 - 존재하지 않는 subscriptionsId")
     void visitSubscriptionFail() {
-        //given
-        //expected
+        // given
+        // expected
         assertThatThrownBy(() -> sut.visitSubscription(2L))
                 .isInstanceOf(IllegalArgumentException.class);
     }
@@ -99,12 +100,12 @@ class SubscriptionVisitServiceTest {
     @Test
     @DisplayName("블로그 방문시 블로그 방문 이벤트 발생")
     void visitSubscriptionPublishBlogVisitEvent() {
-        //given
+        // given
         setMock();
         ArgumentCaptor<SubscriptionsBlogVisitEvent> captor = ArgumentCaptor.forClass(SubscriptionsBlogVisitEvent.class);
-        //when
+        // when
         sut.visitSubscription(ANY_SUBSCRIPTIONS_ID);
-        //then
+        // then
         verify(mockPublisher, times(1)).publishEvent(captor.capture());
         SubscriptionsBlogVisitEvent value = captor.getValue();
         assertThat(value.subscriptionsId()).isEqualTo(ANY_SUBSCRIPTIONS_ID);
@@ -114,34 +115,34 @@ class SubscriptionVisitServiceTest {
     @Test
     @DisplayName("구독 포스트 방문 테스트 - Subscription 조회수가 1 증가한다.")
     void visitSubscriptionPostIncreaseVisitCnt() {
-        //given
+        // given
         SubscriptionRoot subscriptionRoot = setMock();
-        //when
+        // when
         sut.visitSubscription(ANY_SUBSCRIPTIONS_ID, ANY_POST_URL);
-        //then
+        // then
         assertThat(subscriptionRoot.getSubscriptionInfo().getSubscriptionVisitCount()).isEqualTo(1L);
     }
 
     @Test
     @DisplayName("구독 포스트 방문 테스트 - 요청한 Post URL를  리턴한다.")
     void visitSubscriptionPostURL() {
-        //given
+        // given
         setMock();
-        //when
+        // when
         VisitSubscriptionResponse response = sut.visitSubscription(ANY_SUBSCRIPTIONS_ID, ANY_POST_URL);
-        //then
+        // then
         assertThat(response.getRedirectUrl()).isEqualTo(ANY_POST_URL);
     }
 
     @Test
     @DisplayName("포스트 방문 이벤트 발생")
     void visitSubscriptionPostPublishPostVisitEvent() {
-        //given
+        // given
         setMock();
         ArgumentCaptor<SubscriptionsPostVisitEvent> captor = ArgumentCaptor.forClass(SubscriptionsPostVisitEvent.class);
-        //when
+        // when
         sut.visitSubscription(ANY_SUBSCRIPTIONS_ID, ANY_POST_URL);
-        //then
+        // then
         verify(mockPublisher, times(1)).publishEvent(captor.capture());
         SubscriptionsPostVisitEvent value = captor.getValue();
         assertThat(value.subscriptionsId()).isEqualTo(ANY_SUBSCRIPTIONS_ID);

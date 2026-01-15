@@ -1,11 +1,6 @@
-To achieve this, you need to add a new modal for "블로그 구독하기" and modify the `handleMouseMove` function to handle the right edge for showing this new modal. Here is the updated code:
-
-```vue
 <template>
   <div id="app">
     <svg id="svg">
-      <!-- 중앙 노드를 원 형태로 표시 -->
-      <circle :cx="centerNode.x" :cy="centerNode.y" :r="centerNodeSize / 2" fill="black"/>
       <!-- 다른 노드와 중앙 노드를 선으로 연결 -->
       <line
           v-for="(node, index) in visibleNodes"
@@ -19,14 +14,31 @@ To achieve this, you need to add a new modal for "블로그 구독하기" and mo
           stroke-opacity="0.2"
       />
     </svg>
+    
+    <!-- 중앙 노드 (사용자 본인) -->
+    <div
+      class="node center-node"
+      :style="{
+        width: centerNodeSize + 'px',
+        height: centerNodeSize + 'px',
+        top: (centerNode.y - centerNodeSize / 2) + 'px',
+        left: (centerNode.x - centerNodeSize / 2) + 'px',
+        backgroundImage: 'url(https://api.dicebear.com/7.x/initials/svg?seed=Me&backgroundColor=000000)'
+      }"
+    ></div>
+
+    <!-- 서브 노드들 (구독 블로그) -->
     <div
         v-for="(node, index) in visibleNodes"
         :key="index"
-        class="node"
+        class="node sub-node"
         :style="{ ...node.style, width: nodeSize + 'px', height: nodeSize + 'px' }"
         @mouseover="handleMouseOver(index)"
         @mouseleave="handleMouseLeave(index)"
-    ></div>
+    >
+    </div>
+
+    <!-- 모달: 로그인/로그아웃 -->
     <div v-if="showLoginModal" class="login-modal">
       <div v-if="!isLoggedIn" class="modal-content">
         <h2>Login</h2>
@@ -51,9 +63,11 @@ To achieve this, you need to add a new modal for "블로그 구독하기" and mo
         </div>
       </div>
     </div>
+
+    <!-- 모달: 회원가입 -->
     <div v-if="showSignupModal" class="signup-modal">
       <div class="modal-content">
-        <h2>Login</h2>
+        <h2>Sign Up</h2>
         <form @submit.prevent="handleSignupRequest">
           <label for="userEmail">메일:</label>
           <input type="text" id="userEmail" name="userEmail"/>
@@ -67,6 +81,8 @@ To achieve this, you need to add a new modal for "블로그 구독하기" and mo
         </form>
       </div>
     </div>
+
+    <!-- 모달: 블로그 구독하기 -->
     <div v-if="showSubscribeModal" class="subscribe-modal">
       <div class="modal-content">
         <h2>블로그 구독하기</h2>
@@ -79,6 +95,8 @@ To achieve this, you need to add a new modal for "블로그 구독하기" and mo
         </form>
       </div>
     </div>
+
+    <!-- 사이드 탭 영역 (마우스 감지용) -->
     <div v-if="showSideTab" class="side-tab" @mouseover="handleMouseOverSideTab"
          @mouseleave="handleMouseLeaveSideTab"></div>
   </div>
@@ -99,26 +117,26 @@ interface Node {
   bounds: { minX: number; maxX: number; minY: number; maxY: number }; // 이동 범위
   style: Record<string, string>; // 스타일
   isStopped: boolean; // 멈춤 상태 여부
+  thumbnailUrl?: string; // 블로그 썸네일 URL
+  nickName?: string; // 블로그 닉네임
 }
 
 export default defineComponent({
   name: 'App',
   setup() {
-    const router = useRouter(); // 라우터
+    const router = useRouter(); 
     const authStore = useAuthStore();
 
-    const centerNode = reactive({x: window.innerWidth / 2, y: window.innerHeight / 2}); // 중앙 노드의 위치
-    const centerNodeSize = 60; // 중앙 노드의 크기
-    const nodeSize = 40; // 서브노드의 크기
-    const minDistance = 200; // 중앙에서 최소 거리
-    const maxDistance = 250; // 중앙에서 최대 거리
-    const visibleNodeCount = ref(20); // 화면에 보이는 노드의 개수
-    const range = 100; // 서브노드의 이동 범위
+    const centerNode = reactive({x: window.innerWidth / 2, y: window.innerHeight / 2}); 
+    const centerNodeSize = 60; 
+    const nodeSize = 40; 
+    const minDistance = 200; 
+    const maxDistance = 250; 
+    const visibleNodeCount = ref(20); 
+    const range = 100; 
 
-    // 초기 속도 범위 설정
-    const initialSpeed = 1; // 초기 속도 범위 값 조절
+    const initialSpeed = 1; 
 
-    // 랜덤 위치 생성 함수
     const getRandomPosition = () => {
       const angle = Math.random() * Math.PI * 2;
       const r = minDistance + Math.random() * (maxDistance - minDistance);
@@ -128,7 +146,6 @@ export default defineComponent({
       };
     };
 
-    // 랜덤 속도 생성 함수
     const getRandomVelocity = () => {
       return {
         x: (Math.random() * 2 - 1) * initialSpeed,
@@ -136,7 +153,6 @@ export default defineComponent({
       };
     };
 
-    // 초기 위치를 기준으로 이동 범위 생성 함수
     const getInitialBounds = (initialPosition: { x: number; y: number }, range: number) => {
       return {
         minX: initialPosition.x - range,
@@ -146,28 +162,12 @@ export default defineComponent({
       };
     };
 
-    // 서브노드 생성 함수
-    const createNode = () => {
-      const initialPosition = getRandomPosition();
-      const bounds = getInitialBounds(initialPosition, range);
-      return {
-        position: initialPosition,
-        velocity: getRandomVelocity(),
-        initialPosition,
-        bounds,
-        style: {},
-        isStopped: false,
-      };
-    };
-
-    const nodes = reactive<Node[]>(Array.from({length: 0}, createNode)); // 서브노드 배열 생성
-    const visibleNodes = ref<Node[]>([]); // 화면에 보이는 노드 배열
+    const nodes = reactive<Node[]>([]); 
+    const visibleNodes = ref<Node[]>([]); 
 
     const fetchBlogSubscriptions = async () => {
       try {
-        const blogs = await fetchWrapper.get('/api/subscriptions/blogs/close');
-
-        // Update nodes and visibleNodes with the fetched data
+        const blogs = await fetchWrapper.get('/api/subscriptions/blogs/close', null);
         nodes.splice(0, nodes.length, ...blogs.map(createNodeFromBlog));
         visibleNodes.value = nodes.slice(0, visibleNodeCount.value);
       } catch (error) {
@@ -178,19 +178,27 @@ export default defineComponent({
     const createNodeFromBlog = (blog: any): Node => {
       const initialPosition = getRandomPosition();
       const bounds = getInitialBounds(initialPosition, range);
+      // 썸네일이 없을 경우 닉네임을 기반으로 한 아바타 이미지 사용
+      const displayThumb = blog.thumbnailUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(blog.nickName || 'B')}`;
+      
       return {
         position: initialPosition,
         velocity: getRandomVelocity(),
         initialPosition,
         bounds,
-        style: {},
+        style: { 
+          backgroundImage: `url(${displayThumb})`,
+          top: `${initialPosition.y}px`,
+          left: `${initialPosition.x}px`
+        },
         isStopped: false,
+        thumbnailUrl: blog.thumbnailUrl,
+        nickName: blog.nickName,
       };
     };
 
     let intervalId: number | null = null;
 
-    // 서브노드 움직임 함수
     const startMovement = () => {
       intervalId = setInterval(() => {
         nodes.forEach((node) => {
@@ -198,16 +206,13 @@ export default defineComponent({
             node.position.x += node.velocity.x;
             node.position.y += node.velocity.y;
 
-            // 자연스러운 움직임을 위한 속도 변화
             node.velocity.x += (Math.random() * 2 - 1) * 0.01;
             node.velocity.y += (Math.random() * 2 - 1) * 0.01;
 
-            // 최대 속도 제한 설정
-            const maxSpeed = 1.3; // 최대 속도 값 조절
+            const maxSpeed = 1.3; 
             node.velocity.x = Math.max(Math.min(node.velocity.x, maxSpeed), -maxSpeed);
             node.velocity.y = Math.max(Math.min(node.velocity.y, maxSpeed), -maxSpeed);
 
-            // 노드가 이동 범위를 벗어나면 반전
             if (node.position.x < node.bounds.minX || node.position.x > node.bounds.maxX) {
               node.position.x = Math.max(Math.min(node.position.x, node.bounds.maxX), node.bounds.minX);
               node.velocity.x *= -1;
@@ -222,12 +227,10 @@ export default defineComponent({
           }
         });
 
-        // 화면에 보이는 노드 업데이트
         visibleNodes.value = nodes.slice(0, visibleNodeCount.value);
       }, 100);
     };
 
-    // 노드 마우스 오버 이벤트 핸들러
     const handleMouseOver = (index: number) => {
       nodes.forEach((node, i) => {
         if (i !== index) {
@@ -238,7 +241,6 @@ export default defineComponent({
       nodes[index].style.zIndex = '1';
     };
 
-    // 노드 마우스 리브 이벤트 핸들러
     const handleMouseLeave = (index: number) => {
       nodes.forEach((node) => {
         node.isStopped = false;
@@ -256,12 +258,10 @@ export default defineComponent({
 
     const isMouseOverSideTab = ref(false);
 
-    // 사이드탭 마우스 오버 핸들러
     const handleMouseOverSideTab = () => {
       isMouseOverSideTab.value = true;
     };
 
-    // 사이드탭 마우스 리브 핸들러
     const handleMouseLeaveSideTab = () => {
       isMouseOverSideTab.value = false;
       if (!showSideTab.value) {
@@ -269,11 +269,10 @@ export default defineComponent({
       }
     };
 
-    // 마우스 이동 핸들러
-    let isMouseOverRightEdge = false; // 오른쪽 끝 임계값에 마우스가 있는지 여부
-    let isMouseOverLeftEdge = false; // 오른쪽 끝 임계값에 마우스가 있는지 여부
+    let isMouseOverRightEdge = false; 
+    let isMouseOverLeftEdge = false; 
 
-    const edgeThreshold = 150; // 좌우 끝으로 인식할 임계값
+    const edgeThreshold = 150; 
     let leftEdgeCounter = 0;
     let rightEdgeCounter = 0;
 
@@ -281,39 +280,34 @@ export default defineComponent({
       const {clientX} = event;
 
       if (clientX >= window.innerWidth - edgeThreshold) {
-        // 오른쪽 끝으로 마우스를 이동했을 때
         if (!isMouseOverRightEdge) {
-          moveScreen('left'); // 화면 왼쪽으로 이동
-          showLoginModal.value = false; // 로그인 모달 닫기
-          showSubscribeModal.value = true; // 블로그 구독 모달 열기
-          isMouseOverRightEdge = true; // 마우스 위치 업데이트
+          moveScreen('left');
+          showLoginModal.value = false;
+          showSubscribeModal.value = true;
+          isMouseOverRightEdge = true;
           rightEdgeCounter++;
           leftEdgeCounter = 0;
         }
       } else if (isMouseOverRightEdge) {
-        // 오른쪽 끝 임계값을 벗어났을 때
-        resetScreenPosition(); // 화면 위치 초기화
-        isMouseOverRightEdge = false; // 마우스 위치 업데이트
+        resetScreenPosition();
+        isMouseOverRightEdge = false;
       }
 
       if (clientX <= edgeThreshold) {
-        // 왼쪽 끝으로 마우스를 이동했을 때
         if (!isMouseOverLeftEdge) {
-          moveScreen('right'); // 화면 오른쪽으로 이동
-          showSubscribeModal.value = false; // 블로그 구독 모달 닫기
-          isLoggedIn.value = !!getAccessTokenFromCookie(); // 인증 상태 업데이트
-          showLoginModal.value = true; // 로그인/로그아웃 모달 열기
-          isMouseOverLeftEdge = true; // 마우스 위치 업데이트
+          moveScreen('right');
+          showSubscribeModal.value = false;
+          isLoggedIn.value = !!getAccessTokenFromCookie();
+          showLoginModal.value = true;
+          isMouseOverLeftEdge = true;
           leftEdgeCounter++;
           rightEdgeCounter = 0;
         }
       } else if (isMouseOverLeftEdge) {
-        // 왼쪽 끝 임계값을 벗어났을 때
-        resetScreenPosition(); // 화면 위치 초기화
-        isMouseOverLeftEdge = false; // 마우스 위치 업데이트
+        resetScreenPosition();
+        isMouseOverLeftEdge = false;
       }
 
-      // 모달이 두 번 열리면 닫기
       if (leftEdgeCounter >= 2) {
         showLoginModal.value = false;
         leftEdgeCounter = 0;
@@ -325,7 +319,6 @@ export default defineComponent({
       }
     };
 
-    // 로그인 요청
     const handleSigninRequest = async (event: Event) => {
       event.preventDefault();
       const email = (document.getElementById('userEmail') as HTMLInputElement).value;
@@ -334,11 +327,11 @@ export default defineComponent({
       return authStore.login(email, password)
           .then(() => {
             alert("로그인이 완료되었습니다.");
+            isLoggedIn.value = true;
             showLoginModal.value = false;
           });
     };
 
-    // 로그아웃 요청
     const handleLogout = () => {
       deleteCookieFromBrowser('accessToken');
       deleteCookieFromBrowser('refreshToken');
@@ -347,14 +340,11 @@ export default defineComponent({
       alert("로그아웃되었습니다.");
     };
 
-    // 회원가입 버튼 클릭 핸들러
     const handleOpenSignup = () => {
-      // 회원가입 모달로 변경
       showLoginModal.value = false;
       showSignupModal.value = true;
     };
 
-    // 회원가입 요청
     const handleSignupRequest = async (event: Event) => {
       event.preventDefault();
       const email = (document.getElementById('userEmail') as HTMLInputElement).value;
@@ -377,18 +367,17 @@ export default defineComponent({
           });
     };
 
-    // 블로그 구독 요청
     const handleSubscribeRequest = async (event: Event) => {
       event.preventDefault();
       const rssUri = (document.getElementById('rssUri') as HTMLInputElement).value;
 
-
-      fetchWrapper.post("/api/subscriptions", { // 이 부분
+      fetchWrapper.post("/api/subscriptions", {
         rssUri: rssUri
       })
           .then(() => {
             alert("블로그 구독이 완료되었습니다.");
             showSubscribeModal.value = false;
+            fetchBlogSubscriptions(); // 목록 갱신
           })
           .catch((error) => {
             console.log(error);
@@ -396,19 +385,18 @@ export default defineComponent({
           });
     };
 
-    // 화면 이동 함수
     const moveScreen = (direction: 'left' | 'right') => {
-      document.getElementById('app')!.style.transform = direction === 'left' ? 'translateX(-100px)' : 'translateX(100px)';
+      const app = document.getElementById('app');
+      if (app) app.style.transform = direction === 'left' ? 'translateX(-100px)' : 'translateX(100px)';
     };
 
-    // 화면 위치 초기화 함수
     const resetScreenPosition = () => {
       if (!isMouseOverSideTab.value) {
-        document.getElementById('app')!.style.transform = 'translateX(0)';
+        const app = document.getElementById('app');
+        if (app) app.style.transform = 'translateX(0)';
       }
     };
 
-    // 컴포넌트 마운트 시 실행되는 함수
     onMounted(() => {
       fetchBlogSubscriptions();
       startMovement();
@@ -455,36 +443,46 @@ export default defineComponent({
   position: absolute;
   width: 100%;
   height: 100%;
+  pointer-events: none; /* SVG가 클릭을 방해하지 않도록 */
 }
 
 .node {
   position: absolute;
-  background-color: black;
+  background-color: #f0f0f0;
   border-radius: 50%;
-  transition: transform 0.3s, z-index 0.3s, top 0.1s, left 0.1s, width 0.3s, height 0.3s; /* 변환, z-index, 상단, 왼쪽, 너비, 높이에 대한 트랜지션 효과 */
+  background-size: cover;
+  background-position: center;
+  border: 4px solid white;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  transition: transform 0.3s, z-index 0.3s, top 0.1s, left 0.1s, width 0.3s, height 0.3s;
+  overflow: hidden;
 }
 
-/* 중앙 노드 스타일 */
-#svg circle {
-  fill: black;
+.center-node {
+  z-index: 10;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+.sub-node {
+  cursor: pointer;
 }
 
 .login-modal, .signup-modal, .subscribe-modal {
-  /* 로그인, 회원가입, 블로그 구독 모달 스타일 */
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 300px;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  width: 320px;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  padding: 30px;
 }
 
 .modal-content {
@@ -492,8 +490,10 @@ export default defineComponent({
 }
 
 .modal-content h2 {
-  margin-bottom: 20px;
+  margin-bottom: 25px;
   text-align: center;
+  font-weight: 700;
+  color: #333;
 }
 
 .modal-content form {
@@ -502,47 +502,66 @@ export default defineComponent({
 }
 
 .modal-content label {
-  margin-bottom: 5px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #666;
 }
 
 .modal-content input {
-  margin-bottom: 15px;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  margin-bottom: 20px;
+  padding: 12px 15px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  background-color: #f9f9f9;
+  font-size: 16px;
+  transition: border-color 0.3s;
+  
+  &:focus {
+    outline: none;
+    border-color: #007bff;
+  }
 }
 
 .button-group {
   display: flex;
   justify-content: space-between;
+  gap: 10px;
 }
 
 .signup-button,
 .login-button,
 .subscribe-button {
-  width: 48%;
-  padding: 10px;
+  flex: 1;
+  padding: 12px;
   background-color: #007bff;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: transform 0.2s, background-color 0.3s;
+
+  &:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 }
 
 .signup-request-button {
-  width: 100%; /* 버튼을 부모 요소의 너비에 맞춤 */
-  display: flex;
-  justify-content: center; /* 버튼 내용물을 수평 가운데 정렬 */
-}
-
-.signup-button:hover,
-.login-button:hover {
-  background-color: #0056b3;
+  width: 100%;
 }
 
 .side-tab {
-  /* 사이드 탭 스타일 */
+  position: fixed;
+  top: 0;
+  height: 100%;
+  width: 20px;
+  z-index: 500;
+  /* background-color: rgba(0,0,0,0.05); 디버깅용 */
 }
 </style>
-

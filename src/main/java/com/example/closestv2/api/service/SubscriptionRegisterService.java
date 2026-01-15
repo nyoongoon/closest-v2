@@ -1,6 +1,5 @@
 package com.example.closestv2.api.service;
 
-
 import com.example.closestv2.api.service.model.request.SubscriptionsPostServiceRequest;
 import com.example.closestv2.api.usecases.SubscriptionRegisterUsecase;
 import com.example.closestv2.domain.blog.BlogRepository;
@@ -46,7 +45,9 @@ public class SubscriptionRegisterService implements SubscriptionRegisterUsecase 
         URL blogUrl = blogRoot.getBlogInfo().getBlogUrl();
         String blogTitle = blogRoot.getBlogInfo().getBlogTitle();
         LocalDateTime publishedDateTime = blogRoot.getBlogInfo().getPublishedDateTime();
-        SubscriptionRoot subscriptionRoot = SubscriptionRoot.create(memberEmail, blogUrl, blogTitle, publishedDateTime);
+        URL thumbnailUrl = blogRoot.getBlogInfo().getThumbnailUrl();
+        SubscriptionRoot subscriptionRoot = SubscriptionRoot.create(memberEmail, blogUrl, blogTitle, publishedDateTime,
+                thumbnailUrl);
         subscriptionRepository.save(subscriptionRoot);
     }
 

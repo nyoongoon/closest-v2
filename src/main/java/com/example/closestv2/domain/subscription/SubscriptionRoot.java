@@ -49,6 +49,7 @@ public class SubscriptionRoot {
                 SubscriptionInfo subscriptionInfo = SubscriptionInfo.builder()
                                 .memberEmail(memberEmail)
                                 .subscriptionVisitCount(0L)
+                                .subscriptionNickName(blogTitle)
                                 .build();
                 SubscriptionBlog subscriptionBlog = SubscriptionBlog.builder()
                                 .blogUrl(blogUrl)

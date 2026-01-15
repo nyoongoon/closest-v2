@@ -343,6 +343,10 @@ components:
           type: string
           format: uri
           example: https://example.com/blog1
+        thumbnailUrl:
+          type: string
+          format: uri
+          example: https://example.com/thumbnail.png
         newPostsCnt:
           type: integer
           example: 5

@@ -27,21 +27,28 @@ public class SubscriptionQueryService implements SubscriptionQueryUsecase {
 
     @Override
     public List<SubscriptionResponse> getCloseSubscriptions(String memberEmail) {
-        List<SubscriptionRoot> subscriptionRoots = subscriptionQueryRepository.findByMemberIdVisitCountDesc(memberEmail, 0, 20);
+        List<SubscriptionRoot> subscriptionRoots = subscriptionQueryRepository.findByMemberIdVisitCountDesc(memberEmail,
+                0, 20);
         return extractSubscriptionResponses(subscriptionRoots, new ArrayList<>());
     }
 
     @Override
     public List<SubscriptionResponse> getRecentPublishedSubscriptions(String memberEmail, int page, int size) {
-        List<SubscriptionRoot> subscriptionRoots = subscriptionQueryRepository.findByMemberIdPublishedDateTimeDesc(memberEmail, page, size);
+        List<SubscriptionRoot> subscriptionRoots = subscriptionQueryRepository
+                .findByMemberIdPublishedDateTimeDesc(memberEmail, page, size);
         return extractSubscriptionResponses(subscriptionRoots, new ArrayList<>());
     }
 
-    private List<SubscriptionResponse> extractSubscriptionResponses(List<SubscriptionRoot> subscriptionRoots, List<SubscriptionResponse> responses) {
+    private List<SubscriptionResponse> extractSubscriptionResponses(List<SubscriptionRoot> subscriptionRoots,
+            List<SubscriptionResponse> responses) {
         for (SubscriptionRoot subscriptionRoot : subscriptionRoots) {
             URI uri;
+            URI thumbnailUrl = null;
             try {
                 uri = subscriptionRoot.getSubscriptionBlog().getBlogUrl().toURI();
+                if (subscriptionRoot.getSubscriptionBlog().getThumbnailUrl() != null) {
+                    thumbnailUrl = subscriptionRoot.getSubscriptionBlog().getThumbnailUrl().toURI();
+                }
             } catch (URISyntaxException e) {
                 throw new IllegalStateException(SERVER_ERROR);
             }
@@ -49,11 +56,11 @@ public class SubscriptionQueryService implements SubscriptionQueryUsecase {
                     new SubscriptionResponse()
                             .subscriptionId(subscriptionRoot.getId())
                             .uri(uri)
+                            .thumbnailUrl(thumbnailUrl)
                             .nickName(subscriptionRoot.getSubscriptionInfo().getSubscriptionNickName())
                             .newPostsCnt(subscriptionRoot.getSubscriptionBlog().getNewPostCount())
                             .visitCnt(subscriptionRoot.getSubscriptionInfo().getSubscriptionVisitCount())
-                            .publishedDateTime(subscriptionRoot.getSubscriptionBlog().getPublishedDateTime())
-            );
+                            .publishedDateTime(subscriptionRoot.getSubscriptionBlog().getPublishedDateTime()));
         }
         return responses;
     }

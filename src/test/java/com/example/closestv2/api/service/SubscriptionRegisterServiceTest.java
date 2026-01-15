@@ -101,7 +101,7 @@ class SubscriptionRegisterServiceTest {
         // given
         ArgumentCaptor<SubscriptionRoot> captor = ArgumentCaptor.forClass(SubscriptionRoot.class);
         SubscriptionRoot subscriptionRoot = SubscriptionRoot.create(ANY_MEMBER_EMAIL1, ANY_BLOG_URL, ANY_BLOG_TITLE,
-                ANY_PUBLISHED_DATE_TIME);
+                ANY_PUBLISHED_DATE_TIME, null);
 
         ReflectionTestUtils.setField(subscriptionRoot, "id", ANY_SUBSCRIPTION_ID);
 
@@ -131,7 +131,8 @@ class SubscriptionRegisterServiceTest {
     void unregisterSubscriptionNotMatchesMemberId() {
         // given
         when(subscriptionRepository.findById(ANY_SUBSCRIPTION_ID)).thenReturn(Optional
-                .of(SubscriptionRoot.create(ANY_MEMBER_EMAIL1, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME)));
+                .of(SubscriptionRoot.create(ANY_MEMBER_EMAIL1, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME,
+                        null)));
         // expected
         assertThatThrownBy(
                 () -> subscriptionRegisterService.unregisterSubscription(ANY_MEMBER_EMAIL2, ANY_SUBSCRIPTION_ID))

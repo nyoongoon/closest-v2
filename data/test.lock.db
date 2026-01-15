@@ -1,6 +1,6 @@
 #FileLock
-#Thu Jan 15 22:35:48 KST 2026
+#Thu Jan 15 23:58:21 KST 2026
 hostName=1.245.70.199
-id=19bc1de8ba2411c7d9c48997a8c8effc66cfbf5d296
+id=19bc22a1d79c6b867f00d8592a68a90563dbe020cff
 method=file
-server=1.245.70.199\:50454
+server=1.245.70.199\:60797
