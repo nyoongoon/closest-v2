@@ -11,9 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.net.URL;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -41,8 +39,7 @@ public class BlogRoot {
 
     @Builder(access = AccessLevel.PRIVATE)
     private BlogRoot(
-            BlogInfo blogInfo
-    ) {
+            BlogInfo blogInfo) {
         this.blogInfo = blogInfo;
     }
 
@@ -50,16 +47,16 @@ public class BlogRoot {
             URL rssUrl,
             URL blogUrl,
             String blogTitle,
-            String author
-    ) {
+            String author,
+            URL thumbnailUrl) {
         LocalDateTime epochTime = SpecificDate.EPOCH_TIME.getLocalDateTime();
         return create(
                 rssUrl,
                 blogUrl,
                 blogTitle,
                 author,
-                epochTime
-        );
+                thumbnailUrl,
+                epochTime);
     }
 
     public static BlogRoot create(
@@ -67,13 +64,14 @@ public class BlogRoot {
             URL blogUrl,
             String blogTitle,
             String author,
-            LocalDateTime publishedDateTime
-    ) {
+            URL thumbnailUrl,
+            LocalDateTime publishedDateTime) {
         BlogInfo blogInfo = BlogInfo.builder()
                 .rssUrl(rssUrl)
                 .blogUrl(blogUrl)
                 .blogTitle(blogTitle)
                 .author(author)
+                .thumbnailUrl(thumbnailUrl)
                 .publishedDateTime(publishedDateTime)
                 .blogVisitCount(0L)
                 .build();
@@ -85,8 +83,7 @@ public class BlogRoot {
     public Post createPost(
             URL postUrl,
             String postTitle,
-            LocalDateTime publishedDateTime
-    ) {
+            LocalDateTime publishedDateTime) {
         Post post = Post.builder()
                 .postUrl(postUrl)
                 .postTitle(postTitle)
@@ -108,9 +105,8 @@ public class BlogRoot {
                 .build();
     }
 
-    public boolean isBlogUpdated( //todo 업데이트 여부.. 일단 추가하지 않고 성능 이슈되면 추가하기??
-                                  BlogRoot comparedBlogRoot
-    ) {
+    public boolean isBlogUpdated( // todo 업데이트 여부.. 일단 추가하지 않고 성능 이슈되면 추가하기??
+            BlogRoot comparedBlogRoot) {
         BlogInfo comparedBlogInfo = comparedBlogRoot.blogInfo;
 
         if (!blogInfo.getBlogTitle().equals(comparedBlogInfo.getBlogTitle())) {
@@ -127,8 +123,7 @@ public class BlogRoot {
     }
 
     public void updateBlogRoot(
-            BlogRoot comparedBlogRoot
-    ) {
+            BlogRoot comparedBlogRoot) {
         BlogInfo comparedBlogInfo = comparedBlogRoot.blogInfo;
         checkValidUpdate(comparedBlogInfo);
 
@@ -151,8 +146,7 @@ public class BlogRoot {
      * Post 중 가장 발생시간이 최신인 것
      */
     private boolean isPostsUpdated(
-            BlogRoot comparedBlogRoot
-    ) {
+            BlogRoot comparedBlogRoot) {
         BlogInfo comparedBlogInfo = comparedBlogRoot.blogInfo;
         checkValidUpdate(comparedBlogInfo);
 
@@ -164,8 +158,7 @@ public class BlogRoot {
     }
 
     private void updatePosts(
-            BlogRoot comparedBlogRoot
-    ) {
+            BlogRoot comparedBlogRoot) {
         checkValidUpdate(comparedBlogRoot.blogInfo);
         LocalDateTime recentPublishedDateTime = blogInfo.getPublishedDateTime();
 
@@ -189,7 +182,7 @@ public class BlogRoot {
                 originPost.updatePublishedDateTime(comparedPost.getPublishedDateTime());
             }
         }
-        updatePublishedDateTime(recentPublishedDateTime); //blogInfo publishedDateTime 최신화
+        updatePublishedDateTime(recentPublishedDateTime); // blogInfo publishedDateTime 최신화
     }
 
     public void updatePublishedDateTime(LocalDateTime recentPublishedDateTime) {
@@ -206,19 +199,33 @@ public class BlogRoot {
 
     private void checkValidUpdate(BlogInfo comparedBlogInfo) {
         if (!blogInfo.getRssUrl().equals(comparedBlogInfo.getRssUrl())) {
-            log.error("RSS URL이 다른 블로그 정보로 업데이트 시도 - 기존: {}, 업데이트 시도: {}", blogInfo.getBlogUrl(), comparedBlogInfo.getBlogUrl());
+            log.error("RSS URL이 다른 블로그 정보로 업데이트 시도 - 기존: {}, 업데이트 시도: {}", blogInfo.getBlogUrl(),
+                    comparedBlogInfo.getBlogUrl());
             throw new IllegalStateException(BLOG_UPDATABLE_BY_SAME_RSS_URL);
         }
         // blogInfo의 발행시간이 더 이후면 예외
         if (blogInfo.getPublishedDateTime().isAfter(comparedBlogInfo.getPublishedDateTime())) {
-            log.error("블로그 업데이트는 발행시간이 더 과거인 블로그로 업데이트 할 수 없다. 기존:{}, 업데이트 시도:{} ", blogInfo.getPublishedDateTime(), comparedBlogInfo.getPublishedDateTime());
+            log.error("블로그 업데이트는 발행시간이 더 과거인 블로그로 업데이트 할 수 없다. 기존:{}, 업데이트 시도:{} ", blogInfo.getPublishedDateTime(),
+                    comparedBlogInfo.getPublishedDateTime());
             throw new IllegalStateException(BLOG_NON_UPDATABLE_BY_PAST_PUBLISHED_DATETIME);
         }
     }
 
+    public void visit() {
+        blogInfo = BlogInfo.builder()
+                .rssUrl(blogInfo.getRssUrl())
+                .blogUrl(blogInfo.getBlogUrl())
+                .blogTitle(blogInfo.getBlogTitle())
+                .author(blogInfo.getAuthor())
+                .publishedDateTime(blogInfo.getPublishedDateTime())
+                .blogVisitCount(blogInfo.getBlogVisitCount() + 1)
+                .statusMessage(blogInfo.getStatusMessage())
+                .build();
+    }
+
     public void visitPost(URL postUrl) {
         if (!posts.containsKey(postUrl)) {
-            throw new IllegalStateException(NOT_EXISTS_POST_URL);
+            throw new IllegalArgumentException(NOT_EXISTS_POST_URL);
         }
 
         Post post = posts.get(postUrl);
@@ -234,18 +241,27 @@ public class BlogRoot {
     }
 
     @Override
-    public final boolean equals(Object o) { //todo 다른 엔티티에도 적용
-        if (this == o) return true;
-        if (o == null) return false;
-        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
-        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
-        if (thisEffectiveClass != oEffectiveClass) return false;
+    public final boolean equals(Object o) { // todo 다른 엔티티에도 적용
+        if (this == o)
+            return true;
+        if (o == null)
+            return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy
+                ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass()
+                : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy
+                ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass()
+                : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass)
+            return false;
         BlogRoot blogRoot = (BlogRoot) o;
         return getId() != null && Objects.equals(getId(), blogRoot.getId());
     }
 
     @Override
     public final int hashCode() {
-        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+        return this instanceof HibernateProxy
+                ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode()
+                : getClass().hashCode();
     }
 }

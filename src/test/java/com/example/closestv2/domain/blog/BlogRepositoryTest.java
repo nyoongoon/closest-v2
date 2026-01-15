@@ -26,13 +26,14 @@ class BlogRepositoryTest extends RepositoryTestSupport {
     }
 
     @Test
-    @DisplayName("URL타입 blogUrl로 BlogRoot를 조회한다. ")
+    @DisplayName("URL타입 blogUrl로 BlogRoot를 조회한다.")
     void findByBlogUrl() {
-        //given
-        blogRepository.save(BlogRoot.create(ANY_RSS_URL, ANY_BLOG_URL, ANY_TITLE, ANY_AUTHOR, ANY_PUBLISHED_DATE_TIME));
-        //when
+        // given
+        blogRepository
+                .save(BlogRoot.create(ANY_RSS_URL, ANY_BLOG_URL, ANY_TITLE, ANY_AUTHOR, null, ANY_PUBLISHED_DATE_TIME));
+        // when
         BlogRoot sut = blogRepository.findByBlogInfoBlogUrl(ANY_BLOG_URL).orElseThrow();
-        //then
+        // then
         BlogInfo blogInfo = sut.getBlogInfo();
         assertThat(blogInfo)
                 .extracting(BlogInfo::getRssUrl, BlogInfo::getBlogUrl, BlogInfo::getBlogTitle, BlogInfo::getAuthor)
@@ -42,11 +43,12 @@ class BlogRepositoryTest extends RepositoryTestSupport {
     @Test
     @DisplayName("URL타입 rssUrl로 BlogRoot를 조회한다. ")
     void findByRssUrl() {
-        //given
-        blogRepository.save(BlogRoot.create(ANY_RSS_URL, ANY_BLOG_URL, ANY_TITLE, ANY_AUTHOR, ANY_PUBLISHED_DATE_TIME));
-        //when
+        // given
+        blogRepository
+                .save(BlogRoot.create(ANY_RSS_URL, ANY_BLOG_URL, ANY_TITLE, ANY_AUTHOR, null, ANY_PUBLISHED_DATE_TIME));
+        // when
         BlogRoot sut = blogRepository.findByBlogInfoRssUrl(ANY_RSS_URL).orElseThrow();
-        //then
+        // then
         BlogInfo blogInfo = sut.getBlogInfo();
         assertThat(blogInfo)
                 .extracting(BlogInfo::getRssUrl, BlogInfo::getBlogUrl, BlogInfo::getBlogTitle, BlogInfo::getAuthor)

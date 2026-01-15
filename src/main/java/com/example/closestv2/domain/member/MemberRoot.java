@@ -8,8 +8,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.net.URL;
+import java.util.Collection;
+import java.util.List;
 
 import static com.example.closestv2.api.exception.ExceptionMessageConstants.ALREADY_EXISTS_MY_BLOG;
 import static com.example.closestv2.api.exception.ExceptionMessageConstants.NOT_EXISTS_MY_BLOG;
@@ -37,6 +41,13 @@ public class MemberRoot {
             MemberInfo memberInfo
     ) {
         this.memberInfo = memberInfo;
+    }
+
+    public static MemberRoot create(
+            String userEmail,
+            String password
+    ) {
+       return create(userEmail, password, null);
     }
 
     public static MemberRoot create(

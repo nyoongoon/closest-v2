@@ -3,6 +3,7 @@ plugins {
     id 'org.springframework.boot' version '3.3.4'
     id 'io.spring.dependency-management' version '1.1.6'
     id "org.openapi.generator" version "7.7.0"
+    id 'org.jetbrains.kotlin.jvm'
 }
 
 group = 'com.example'
@@ -24,6 +25,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security:3.4.0'
     implementation 'org.springframework.boot:spring-boot-starter-cache:3.4.0'
 
+    /* p6spy */
+    implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.0'
+
     /* utils */
     implementation 'org.apache.commons:commons-lang3:3.17.0'
 
@@ -32,6 +36,11 @@ dependencies {
 
     /* rss */
     implementation 'com.rometools:rome:2.1.0'
+
+    /* jwt */
+    implementation 'io.jsonwebtoken:jjwt:0.9.1'
+    implementation 'javax.xml.bind:jaxb-api:2.3.0'
+    implementation 'org.jsoup:jsoup:1.17.2'
 
     /* querydsl */
     implementation 'com.querydsl:querydsl-core:5.0.0'
@@ -46,6 +55,7 @@ dependencies {
     /* test */
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.assertj:assertj-core'
 
     /* mock server */
     testImplementation("org.mock-server:mockserver-client-java:5.15.0")
@@ -61,6 +71,7 @@ dependencies {
         exclude group: 'org.slf4j', module: 'slf4j-simple'
     }
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 }
 openApiGenerate {
     generatorName = "spring"

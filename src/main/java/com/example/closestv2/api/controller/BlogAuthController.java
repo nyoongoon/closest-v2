@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
@@ -19,16 +20,16 @@ public class BlogAuthController implements BlogAuthApi {
     @Override
     public ResponseEntity<AuthMessageResponse> blogAuthMessageGet(URI rssUri) {
         Authentication authentication = SecurityContextHolder.getContextHolderStrategy().getContext().getAuthentication();
-        Object principal = authentication.getPrincipal();
-        AuthMessageResponse blogAuthMessage = blogAuthUsecase.createBlogAuthMessage((long) principal, rssUri);
+        User user = (User) authentication.getPrincipal();
+        AuthMessageResponse blogAuthMessage = blogAuthUsecase.createBlogAuthMessage(user.getUsername(), rssUri);
         return ResponseEntity.ok(blogAuthMessage);
     }
 
     @Override
     public ResponseEntity<Void> blogAuthVerificationPost() {
         Authentication authentication = SecurityContextHolder.getContextHolderStrategy().getContext().getAuthentication();
-        Object principal = authentication.getPrincipal();
-        blogAuthUsecase.verifyBlogAuthMessage((long) principal);
+        User user = (User) authentication.getPrincipal();
+        blogAuthUsecase.verifyBlogAuthMessage(user.getUsername());
         return ResponseEntity.ok().build();
     }
 }

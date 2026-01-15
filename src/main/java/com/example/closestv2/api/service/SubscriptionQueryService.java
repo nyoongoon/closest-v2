@@ -2,7 +2,6 @@ package com.example.closestv2.api.service;
 
 import com.example.closestv2.api.usecases.SubscriptionQueryUsecase;
 import com.example.closestv2.domain.subscription.SubscriptionQueryRepository;
-import com.example.closestv2.domain.subscription.SubscriptionRepository;
 import com.example.closestv2.domain.subscription.SubscriptionRoot;
 import com.example.closestv2.models.SubscriptionResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,34 +20,47 @@ public class SubscriptionQueryService implements SubscriptionQueryUsecase {
     private final SubscriptionQueryRepository subscriptionQueryRepository;
 
     @Override
-    public List<SubscriptionResponse> getCloseSubscriptions(long memberId) {
-        List<SubscriptionRoot> subscriptionRoots = subscriptionQueryRepository.findByMemberIdVisitCountDesc(memberId, 0, 20);
+    public List<SubscriptionResponse> getCloseSubscriptionsOfAll() {
+        List<SubscriptionRoot> subscriptionRoots = subscriptionQueryRepository.findAllOrderByVisitCountDesc(0, 20);
         return extractSubscriptionResponses(subscriptionRoots, new ArrayList<>());
     }
 
     @Override
-    public List<SubscriptionResponse> getRecentPublishedSubscriptions(long memberId, int page, int size) {
-        List<SubscriptionRoot> subscriptionRoots = subscriptionQueryRepository.findByMemberIdPublishedDateTimeDesc(memberId, page, size);
+    public List<SubscriptionResponse> getCloseSubscriptions(String memberEmail) {
+        List<SubscriptionRoot> subscriptionRoots = subscriptionQueryRepository.findByMemberIdVisitCountDesc(memberEmail,
+                0, 20);
         return extractSubscriptionResponses(subscriptionRoots, new ArrayList<>());
     }
 
-    private List<SubscriptionResponse> extractSubscriptionResponses(List<SubscriptionRoot> subscriptionRoots, List<SubscriptionResponse> responses) {
+    @Override
+    public List<SubscriptionResponse> getRecentPublishedSubscriptions(String memberEmail, int page, int size) {
+        List<SubscriptionRoot> subscriptionRoots = subscriptionQueryRepository
+                .findByMemberIdPublishedDateTimeDesc(memberEmail, page, size);
+        return extractSubscriptionResponses(subscriptionRoots, new ArrayList<>());
+    }
+
+    private List<SubscriptionResponse> extractSubscriptionResponses(List<SubscriptionRoot> subscriptionRoots,
+            List<SubscriptionResponse> responses) {
         for (SubscriptionRoot subscriptionRoot : subscriptionRoots) {
             URI uri;
-            try{
+            URI thumbnailUrl = null;
+            try {
                 uri = subscriptionRoot.getSubscriptionBlog().getBlogUrl().toURI();
-            }catch (URISyntaxException e){
+                if (subscriptionRoot.getSubscriptionBlog().getThumbnailUrl() != null) {
+                    thumbnailUrl = subscriptionRoot.getSubscriptionBlog().getThumbnailUrl().toURI();
+                }
+            } catch (URISyntaxException e) {
                 throw new IllegalStateException(SERVER_ERROR);
             }
             responses.add(
                     new SubscriptionResponse()
                             .subscriptionId(subscriptionRoot.getId())
                             .uri(uri)
+                            .thumbnailUrl(thumbnailUrl)
                             .nickName(subscriptionRoot.getSubscriptionInfo().getSubscriptionNickName())
                             .newPostsCnt(subscriptionRoot.getSubscriptionBlog().getNewPostCount())
                             .visitCnt(subscriptionRoot.getSubscriptionInfo().getSubscriptionVisitCount())
-                            .publishedDateTime(subscriptionRoot.getSubscriptionBlog().getPublishedDateTime())
-            );
+                            .publishedDateTime(subscriptionRoot.getSubscriptionBlog().getPublishedDateTime()));
         }
         return responses;
     }

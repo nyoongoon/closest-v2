@@ -25,13 +25,12 @@ import static com.example.closestv2.api.exception.ExceptionMessageConstants.NOT_
 @RequiredArgsConstructor
 public class BlogSchedulerService {
     private static final int PAGE_SIZE = 100;
-    //    private final BlogFactory blogFactory;
     private final BlogRepository blogRepository;
     private final FeedClient rssFeedClient;
 
     // CompletableFuture<Void>를 반환하게 하여 테스트 시 완료 시점을 체크할 수 있도록 한다.
     @Transactional(readOnly = true)
-    @Scheduled(fixedDelay = 10000)
+//    @Scheduled(fixedDelay = 10000) //todo 개발 편의를 위해 일단 스케듈 멈춤
     public CompletableFuture<Void> pollingUpdatedBlogs() {
         return CompletableFuture.runAsync(() -> {
             int page = 0;

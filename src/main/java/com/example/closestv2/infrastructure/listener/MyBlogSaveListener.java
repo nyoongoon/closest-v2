@@ -1,4 +1,4 @@
-package com.example.closestv2.infrastructure.event;
+package com.example.closestv2.infrastructure.listener;
 
 import com.example.closestv2.api.service.MyBlogSaveService;
 import com.example.closestv2.domain.blog.event.MyBlogSaveEvent;
@@ -15,8 +15,8 @@ public class MyBlogSaveListener {
 
     @EventListener
     public void onMyBlogCreationEvent(MyBlogSaveEvent event) {
-        long memberId = event.memberId();
+        String memberEmail = event.memberEmail();
         URL blogUrl = event.blogUrl();
-        myBlogSaveService.saveMyBlog(memberId, blogUrl);
+        myBlogSaveService.saveMyBlog(memberEmail, blogUrl);
     }
 }

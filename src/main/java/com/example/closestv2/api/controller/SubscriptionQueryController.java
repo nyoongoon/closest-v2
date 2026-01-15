@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -14,21 +15,25 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 public class SubscriptionQueryController implements SubscriptionQueryApi {
-    private SubscriptionQueryUsecase subscriptionQueryUsecase;
+    private final SubscriptionQueryUsecase subscriptionQueryUsecase;
 
     @Override
     public ResponseEntity<List<SubscriptionResponse>> subscriptionsBlogsCloseGet() {
         Authentication authentication = SecurityContextHolder.getContextHolderStrategy().getContext().getAuthentication();
-        Object principal = authentication.getPrincipal();
-        List<SubscriptionResponse> closeSubscriptions = subscriptionQueryUsecase.getCloseSubscriptions((long) principal);
+        if (!authentication.isAuthenticated()) {
+            List<SubscriptionResponse> closeSubscriptionsOfAll = subscriptionQueryUsecase.getCloseSubscriptionsOfAll();
+            return ResponseEntity.ok(closeSubscriptionsOfAll);
+        }
+        User user = (User) authentication.getPrincipal();
+        List<SubscriptionResponse> closeSubscriptions = subscriptionQueryUsecase.getCloseSubscriptions(user.getUsername());
         return ResponseEntity.ok(closeSubscriptions);
     }
 
     @Override
     public ResponseEntity<List<SubscriptionResponse>> subscriptionsBlogsGet(Integer page, Integer size) {
         Authentication authentication = SecurityContextHolder.getContextHolderStrategy().getContext().getAuthentication();
-        Object principal = authentication.getPrincipal();
-        List<SubscriptionResponse> subscriptions = subscriptionQueryUsecase.getRecentPublishedSubscriptions((long) principal, page, size);
+        User user = (User) authentication.getPrincipal();
+        List<SubscriptionResponse> subscriptions = subscriptionQueryUsecase.getRecentPublishedSubscriptions(user.getUsername(), page, size);
         return ResponseEntity.ok(subscriptions);
     }
 }

@@ -7,12 +7,12 @@ import java.net.URL;
 
 @Getter
 public class SubscriptionsPostServiceRequest {
-    private long memberId;
+    private String memberEmail;
     private URL rssUrl;
 
     @Builder
-    public SubscriptionsPostServiceRequest(long memberId, URL rssUrl) {
-        this.memberId = memberId;
+    public SubscriptionsPostServiceRequest(String memberEmail, URL rssUrl) {
+        this.memberEmail = memberEmail;
         this.rssUrl = rssUrl;
     }
 }

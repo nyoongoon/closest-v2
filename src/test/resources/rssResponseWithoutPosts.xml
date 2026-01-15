@@ -1,0 +1,9 @@
+<rss version="2.0">
+    <channel>
+        <title>Mock RSS Feed</title>
+        <link>http://localhost:8888/</link>
+        <description>This is a mock RSS feed for testing</description>
+        <managingEditor>블로그 작가</managingEditor>
+        <pubDate>Tue, 01 Jan 2030 12:03:31 +0000</pubDate>
+    </channel>
+</rss>

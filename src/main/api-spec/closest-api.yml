@@ -1,7 +1,7 @@
 openapi: 3.0.1
 servers:
   - description: 로컬 서버
-    url: localhost:8080
+    url: http://localhost:8080
 info:
   description: Closest의 API 명세서입니다.
   version: 0.0.1
@@ -19,6 +19,8 @@ tags:
     description: 포스트 관리
   - name: blogAuth
     description: 블로그 인증 관리
+  - name: memberAuth
+    description: 회원 인증 관리
 paths:
   /subscriptions/blogs/close:
     get:
@@ -130,7 +132,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 
   /subscriptions/{subscriptionsId}/visit:
-    patch:
+    get:
       tags:
         - subscriptionVisit
       summary: 구독한 블로그 방문 및 조회수 증가
@@ -141,6 +143,36 @@ paths:
           required: true
           schema:
             type: integer
+      responses:
+        "200":
+          description: 블로그 방문 성공 및 조회수 증가
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+  /subscriptions/{subscriptionsId}/visit/{postUrl}:
+    get:
+      tags:
+        - subscriptionVisit
+      summary: 구독한 블로그의 포스트 방문 및 조회수 증가
+      description: 구독한 블로그의 포스트는 새창으로 띄우고 해당 구독 정보에 조회수를 1 증가시킨다
+      parameters:
+        - in: path
+          name: subscriptionsId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: postUrl
+          required: true
+          schema:
+            type: string
+            format: uri
+            example: "https://example.com/post123"
+            description: 구독한 블로그의 포스팅의 URI
+
       responses:
         "200":
           description: 블로그 방문 성공 및 조회수 증가
@@ -235,6 +267,66 @@ paths:
         "500":
           $ref: '#/components/responses/InternalServerError'
 
+
+  /member/auth/signup:
+    post:
+      tags:
+        - memberAuth
+      summary: 멤버 회원가입
+      description: 이메일 비밀번호, 확인 비밀번호롤 회원가입을 한다
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                confirmPassword:
+                  type: string
+              required:
+                - email
+                - password
+                - conform_Password
+      responses:
+        "200":
+          description: 회원가입 성공
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+
+  /member/auth/signin:
+    post:
+      tags:
+        - memberAuth
+      summary: 멤버 로그인
+      description: 이메일 비밀번호로 로그인한다
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        "200":
+          description: 로그인 성공
+        "400":
+          $ref: '#/components/responses/NotFound'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   schemas:
     SubscriptionResponse:
@@ -251,6 +343,10 @@ components:
           type: string
           format: uri
           example: https://example.com/blog1
+        thumbnailUrl:
+          type: string
+          format: uri
+          example: https://example.com/thumbnail.png
         newPostsCnt:
           type: integer
           example: 5

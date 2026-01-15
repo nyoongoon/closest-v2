@@ -16,8 +16,8 @@ public class MyBlogSaveService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public void saveMyBlog(long memberId, URL blogUrl){
-        MemberRoot memberRoot = memberRepository.findById(memberId)
+    public void saveMyBlog(String memberEmail, URL blogUrl){
+        MemberRoot memberRoot = memberRepository.findByMemberInfoUserEmail(memberEmail)
                 .orElseThrow(() -> new IllegalArgumentException(MEMBER_NOT_FOUND));
 
         memberRoot.saveMyBlog(blogUrl, 0);

@@ -5,15 +5,32 @@
         <description>This is a mock RSS feed for testing</description>
         <managingEditor>블로그 작가</managingEditor>
         <pubDate>Tue, 01 Jan 2030 12:03:31 +0000</pubDate>
+        <image>
+            <url>https://example.com/blog-thumbnail.png</url>
+            <title>Mock RSS Feed</title>
+            <link>http://localhost:8888/</link>
+        </image>
         <item>
             <title>포스트 제목 1</title>
             <link>http://localhost:8888/1</link>
             <pubDate>Tue, 01 Jan 2030 12:04:31 +0900</pubDate>
+            <description>
+                <![CDATA[
+                <p>Hello world</p>
+                <img src="https://example.com/post1-thumbnail.png" />
+                ]]>
+            </description>
         </item>
         <item>
             <title>포스트 제목 2</title>
             <link>http://localhost:8888/2</link>
             <pubDate>Tue, 01 Jan 2030 12:05:31 +0900</pubDate>
+            <description>
+                <![CDATA[
+                <p>Hello world 2</p>
+                <img src="https://example.com/post2-thumbnail.png" />
+                ]]>
+            </description>
         </item>
     </channel>
 </rss>
