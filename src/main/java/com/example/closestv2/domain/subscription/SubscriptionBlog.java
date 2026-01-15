@@ -28,13 +28,15 @@ public class SubscriptionBlog {
     @NotNull(message = NEW_POST_COUNT_IS_REQUIRED)
     private int newPostCount;
 
+    private URL thumbnailUrl;
+
     @Builder(access = AccessLevel.PROTECTED)
     private SubscriptionBlog(
             URL blogUrl,
             String blogTitle,
             LocalDateTime publishedDateTime,
-            int newPostCount
-    ) {
+            int newPostCount,
+            URL thumbnailUrl) {
         Assert.notNull(blogUrl, BLOG_URL_IS_REQUIRED);
         Assert.hasText(blogTitle, BLOG_TITLE_IS_REQUIRED);
         Assert.notNull(publishedDateTime, SUBSCRIPTION_PUBLISHED_DATETIME_IS_REQUIRED);
@@ -43,5 +45,6 @@ public class SubscriptionBlog {
         this.blogTitle = blogTitle;
         this.publishedDateTime = publishedDateTime;
         this.newPostCount = newPostCount;
+        this.thumbnailUrl = thumbnailUrl;
     }
 }

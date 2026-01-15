@@ -63,7 +63,7 @@ class BlogAuthServiceTest {
         FeedItem feedItem2 = FeedItem.create(ANY_POST_URI_2.toURL(), "ABC123", ANY_PUBLISHED_DATE_TIME.plusSeconds(1));
         feedItems.add(feedItem1);
         feedItems.add(feedItem2);
-        Feed feed = Feed.create(ANY_RSS_URI.toURL(), ANY_BLOG_URI.toURL(), ANY_BLOG_TITLE, ANY_AUTHOR, feedItems);
+        Feed feed = Feed.create(ANY_RSS_URI.toURL(), ANY_BLOG_URI.toURL(), ANY_BLOG_TITLE, ANY_AUTHOR, null, feedItems);
 
         when(feedClient.getFeed(ANY_RSS_URI.toURL())).thenReturn(feed);
         when(feedClient.getFeed(WRONG_RSS_URI.toURL())).thenThrow(new IllegalStateException());
@@ -73,7 +73,8 @@ class BlogAuthServiceTest {
         BlogAuthCode blogAuthCode = new BlogAuthCode(ANY_MEMBER_EMAIL, ANY_RSS_URI.toURL(), ANY_AUTH_CODE);
         when(blogAuthCodeRepository.save(blogAuthCode)).thenReturn(blogAuthCode);
         when(blogAuthCodeRepository.findByMemberEmail(ANY_MEMBER_EMAIL)).thenReturn(blogAuthCode);
-        when(blogAuthCodeRepository.findByMemberEmail("cba@naver.com")).thenThrow(new IllegalArgumentException(FAIL_BLOG_AUTHENTICATE));
+        when(blogAuthCodeRepository.findByMemberEmail("cba@naver.com"))
+                .thenThrow(new IllegalArgumentException(FAIL_BLOG_AUTHENTICATE));
 
         sut = new BlogAuthService(feedClient, mockPublisher, blogAuthenticator, blogAuthCodeRepository);
     }
@@ -81,74 +82,77 @@ class BlogAuthServiceTest {
     @Test
     @DisplayName("memberId와 rssUri로 인증 메시지를 요청한다. - 인증 메시지 생성 및 저장 후 리턴")
     void createBlogAuthMessage() throws MalformedURLException {
-        //given
+        // given
         AuthMessageResponse response = sut.createBlogAuthMessage(ANY_MEMBER_EMAIL, ANY_RSS_URI);
         BlogAuthCode blogAuthCode = new BlogAuthCode(ANY_MEMBER_EMAIL, ANY_RSS_URI.toURL(), response.getAuthMessage());
         when(blogAuthCodeRepository.findByMemberEmail(ANY_MEMBER_EMAIL)).thenReturn(blogAuthCode);
-        //when
+        // when
         BlogAuthCode found = blogAuthCodeRepository.findByMemberEmail(ANY_MEMBER_EMAIL);
-        //then
+        // then
         assertThat(response.getAuthMessage()).isEqualTo(found.authMessage());
     }
 
     @Test
     @DisplayName("rss가 조회되지 않은 rssUrl을 요청 시 예외가 발생한다.")
     void createAuthCodeWithNotRssUrl() {
-        //given
-        //expected
-        assertThatThrownBy(() -> sut.createBlogAuthMessage(ANY_MEMBER_EMAIL, WRONG_RSS_URI)).isInstanceOf(IllegalStateException.class);
+        // given
+        // expected
+        assertThatThrownBy(() -> sut.createBlogAuthMessage(ANY_MEMBER_EMAIL, WRONG_RSS_URI))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     @DisplayName("memberId로 블로그 인증 요청을 하여 RSS 조회 결과의 최신 포스트명과 저장된 BlogAuthCode를 비교한다.")
     void verifyBlogAuthMessage() {
-        //given
+        // given
         sut.createBlogAuthMessage(ANY_MEMBER_EMAIL, ANY_RSS_URI);
-        //expected
+        // expected
         assertThatCode(() -> sut.verifyBlogAuthMessage(ANY_MEMBER_EMAIL)).doesNotThrowAnyException();
     }
 
     @Test
     @DisplayName("memberId로 블로그 인증 요청을 할 때 RSS 결과 포스트가 한개인 경우 해당 포스트를 반환한다.")
     void verifyBlogAuthMessageWithOnePost() throws MalformedURLException {
-        //given
+        // given
         AuthMessageResponse blogAuthMessage = sut.createBlogAuthMessage(ANY_MEMBER_EMAIL, ANY_RSS_URI);
-        //mocking
-        when(blogAuthCodeRepository.findByMemberEmail(ANY_MEMBER_EMAIL)).thenReturn(new BlogAuthCode(ANY_MEMBER_EMAIL, ANY_RSS_URI.toURL(), blogAuthMessage.getAuthMessage()));
+        // mocking
+        when(blogAuthCodeRepository.findByMemberEmail(ANY_MEMBER_EMAIL))
+                .thenReturn(new BlogAuthCode(ANY_MEMBER_EMAIL, ANY_RSS_URI.toURL(), blogAuthMessage.getAuthMessage()));
         mockingFeedByFeedClient(blogAuthMessage.getAuthMessage());
-        //expected
+        // expected
         assertThatCode(() -> sut.verifyBlogAuthMessage(ANY_MEMBER_EMAIL)).doesNotThrowAnyException();
     }
 
     @Test
     @DisplayName("인증 요청 시 저장되어 있던 BlogAuthCode의 Url로 조회 요청하고 결과가 없으면 에러를 발생한다.")
     void verifyBlogAuthMessageWithNotExistsRssResult() throws MalformedURLException {
-        //given
+        // given
         sut.createBlogAuthMessage(ANY_MEMBER_EMAIL, ANY_RSS_URI);
         when(feedClient.getFeed(ANY_RSS_URI.toURL())).thenThrow(IllegalStateException.class);
-        //expected
+        // expected
         assertThatThrownBy(() -> sut.verifyBlogAuthMessage(ANY_MEMBER_EMAIL)).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     @DisplayName("인증 요청 시 저장되어 있던 BlogAuthCode 값과 rss 조회해온 최신 포스트명의 값이 같지 않으면 에러가 발생한다.")
     void verifyBlogAuthMessageWithNotSameRecentPostTitle() throws MalformedURLException {
-        //given
+        // given
         sut.createBlogAuthMessage(ANY_MEMBER_EMAIL, ANY_RSS_URI);
         mockingFeedByFeedClient(WRONG_POST_TITLE);
-        //expected
-        assertThatThrownBy(() -> sut.verifyBlogAuthMessage(ANY_MEMBER_EMAIL)).isInstanceOf(IllegalArgumentException.class);
+        // expected
+        assertThatThrownBy(() -> sut.verifyBlogAuthMessage(ANY_MEMBER_EMAIL))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     @DisplayName("인증 성공시 MyBlogCreateionEvent가 발생한다.")
     void myBlogCreationEventByAuthenticated() throws MalformedURLException {
-        //given
+        // given
         sut.createBlogAuthMessage(ANY_MEMBER_EMAIL, ANY_RSS_URI);
         ArgumentCaptor<MyBlogSaveEvent> captor = ArgumentCaptor.forClass(MyBlogSaveEvent.class);
-        //when
+        // when
         sut.verifyBlogAuthMessage(ANY_MEMBER_EMAIL);
-        //then
+        // then
         verify(mockPublisher, times(1)).publishEvent(captor.capture());
         MyBlogSaveEvent value = captor.getValue();
         assertThat(value.memberEmail()).isEqualTo(ANY_MEMBER_EMAIL);
@@ -158,10 +162,11 @@ class BlogAuthServiceTest {
     @Test
     @DisplayName("인증 실패시 MyBlogCreateionEvent가 발생하지 않는다.")
     void myBlogCreationEventFailed() {
-        //given
+        // given
         sut.createBlogAuthMessage(ANY_MEMBER_EMAIL, ANY_RSS_URI);
-        //expected
-        assertThatThrownBy(() -> sut.verifyBlogAuthMessage("cba@naver.com")).isInstanceOf(IllegalArgumentException.class);
+        // expected
+        assertThatThrownBy(() -> sut.verifyBlogAuthMessage("cba@naver.com"))
+                .isInstanceOf(IllegalArgumentException.class);
         verify(mockPublisher, never()).publishEvent(any(MyBlogSaveEvent.class));
     }
 
@@ -169,7 +174,7 @@ class BlogAuthServiceTest {
         List<FeedItem> feedItems = new ArrayList<>();
         FeedItem feedItem1 = FeedItem.create(ANY_POST_URI_1.toURL(), postTitle, ANY_PUBLISHED_DATE_TIME);
         feedItems.add(feedItem1);
-        Feed feed = Feed.create(ANY_RSS_URI.toURL(), ANY_BLOG_URI.toURL(), ANY_BLOG_TITLE, ANY_AUTHOR, feedItems);
+        Feed feed = Feed.create(ANY_RSS_URI.toURL(), ANY_BLOG_URI.toURL(), ANY_BLOG_TITLE, ANY_AUTHOR, null, feedItems);
         when(feedClient.getFeed(ANY_RSS_URI.toURL())).thenReturn(feed);
     }
 }

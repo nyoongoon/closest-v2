@@ -51,19 +51,21 @@ class SubscriptionRegisterServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        subscriptionRegisterService = new SubscriptionRegisterService(feedClient, blogRepository, subscriptionRepository);
+        subscriptionRegisterService = new SubscriptionRegisterService(feedClient, blogRepository,
+                subscriptionRepository);
     }
 
     @Test
     @DisplayName("구독 가입 성공")
     void registerSubscription() {
-        //given
+        // given
         SubscriptionsPostServiceRequest request = new SubscriptionsPostServiceRequest(ANY_MEMBER_EMAIL1, ANY_RSS_URL);
-        when(feedClient.getFeed(ANY_RSS_URL)).thenReturn(Feed.create(ANY_RSS_URL, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_AUTHOR, null));
+        when(feedClient.getFeed(ANY_RSS_URL))
+                .thenReturn(Feed.create(ANY_RSS_URL, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_AUTHOR, null, null));
         ArgumentCaptor<SubscriptionRoot> captor = ArgumentCaptor.forClass(SubscriptionRoot.class);
-        //when
+        // when
         subscriptionRegisterService.registerSubscription(request);
-        //then
+        // then
         verify(subscriptionRepository, times(1)).save(captor.capture());
         SubscriptionRoot subscriptionRoot = captor.getValue();
         assertThat(ANY_MEMBER_EMAIL1).isEqualTo(subscriptionRoot.getSubscriptionInfo().getMemberEmail());
@@ -73,11 +75,12 @@ class SubscriptionRegisterServiceTest {
     @DisplayName("구독 가입 시 FeedItem이 존재하지 않으면 publishedDateTime은 에포크 타임이다.")
     void registerSubscriptionWithNoFeedItems() {
         SubscriptionsPostServiceRequest request = new SubscriptionsPostServiceRequest(ANY_MEMBER_EMAIL1, ANY_RSS_URL);
-        when(feedClient.getFeed(ANY_RSS_URL)).thenReturn(Feed.create(ANY_RSS_URL, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_AUTHOR, null));
+        when(feedClient.getFeed(ANY_RSS_URL))
+                .thenReturn(Feed.create(ANY_RSS_URL, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_AUTHOR, null, null));
         ArgumentCaptor<SubscriptionRoot> captor = ArgumentCaptor.forClass(SubscriptionRoot.class);
-        //when
+        // when
         subscriptionRegisterService.registerSubscription(request);
-        //then
+        // then
         verify(subscriptionRepository, times(1)).save(captor.capture());
         SubscriptionRoot subscriptionRoot = captor.getValue();
         assertThat(ANY_MEMBER_EMAIL1).isEqualTo(subscriptionRoot.getSubscriptionInfo().getMemberEmail());
@@ -88,23 +91,24 @@ class SubscriptionRegisterServiceTest {
     void registerSubscriptionWithFailFeedClient() {
         SubscriptionsPostServiceRequest request = new SubscriptionsPostServiceRequest(ANY_MEMBER_EMAIL1, ANY_RSS_URL);
         when(feedClient.getFeed(ANY_RSS_URL)).thenThrow(new IllegalStateException());
-        //expected
+        // expected
         assertThatThrownBy(() -> subscriptionRegisterService.registerSubscription(request));
     }
 
     @Test
     @DisplayName("구독 삭제 성공")
     void unregisterSubscription() {
-        //given
+        // given
         ArgumentCaptor<SubscriptionRoot> captor = ArgumentCaptor.forClass(SubscriptionRoot.class);
-        SubscriptionRoot subscriptionRoot = SubscriptionRoot.create(ANY_MEMBER_EMAIL1, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME);
+        SubscriptionRoot subscriptionRoot = SubscriptionRoot.create(ANY_MEMBER_EMAIL1, ANY_BLOG_URL, ANY_BLOG_TITLE,
+                ANY_PUBLISHED_DATE_TIME);
 
         ReflectionTestUtils.setField(subscriptionRoot, "id", ANY_SUBSCRIPTION_ID);
 
         when(subscriptionRepository.findById(ANY_SUBSCRIPTION_ID)).thenReturn(Optional.of(subscriptionRoot));
-        //when
+        // when
         subscriptionRegisterService.unregisterSubscription(ANY_MEMBER_EMAIL1, ANY_SUBSCRIPTION_ID);
-        //then
+        // then
         verify(subscriptionRepository, times(1)).delete(captor.capture());
         SubscriptionRoot found = captor.getValue();
         assertThat(found.getSubscriptionInfo().getMemberEmail()).isEqualTo(ANY_MEMBER_EMAIL1);
@@ -114,20 +118,23 @@ class SubscriptionRegisterServiceTest {
     @Test
     @DisplayName("구독 삭제 실패 - 구독아이디 존재하지 않는 경우")
     void unregisterSubscriptionNotFoundSubscription() {
-        //given
+        // given
         when(subscriptionRepository.findById(ANY_SUBSCRIPTION_ID)).thenReturn(Optional.empty());
-        //expected
-        assertThatThrownBy(() -> subscriptionRegisterService.unregisterSubscription(ANY_MEMBER_EMAIL1, ANY_SUBSCRIPTION_ID))
+        // expected
+        assertThatThrownBy(
+                () -> subscriptionRegisterService.unregisterSubscription(ANY_MEMBER_EMAIL1, ANY_SUBSCRIPTION_ID))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     @DisplayName("구독 삭제 실패 - 구독 정보의 memberId가 세션의 memberId와 다른 경우")
     void unregisterSubscriptionNotMatchesMemberId() {
-        //given
-        when(subscriptionRepository.findById(ANY_SUBSCRIPTION_ID)).thenReturn(Optional.of(SubscriptionRoot.create(ANY_MEMBER_EMAIL1, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME)));
-        //expected
-        assertThatThrownBy(() -> subscriptionRegisterService.unregisterSubscription(ANY_MEMBER_EMAIL2, ANY_SUBSCRIPTION_ID))
+        // given
+        when(subscriptionRepository.findById(ANY_SUBSCRIPTION_ID)).thenReturn(Optional
+                .of(SubscriptionRoot.create(ANY_MEMBER_EMAIL1, ANY_BLOG_URL, ANY_BLOG_TITLE, ANY_PUBLISHED_DATE_TIME)));
+        // expected
+        assertThatThrownBy(
+                () -> subscriptionRegisterService.unregisterSubscription(ANY_MEMBER_EMAIL2, ANY_SUBSCRIPTION_ID))
                 .isInstanceOf(AccessDeniedException.class);
     }
 }
