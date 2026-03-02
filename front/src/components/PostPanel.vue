@@ -50,12 +50,12 @@
               </div>
               <button
                 class="post-panel__like"
-                :class="{ 'post-panel__like--active': likedPosts.has(post.id) }"
-                @click.stop="toggleLike(post.id)"
-                :disabled="likingPost === post.id"
+                :class="{ 'post-panel__like--active': likedPosts.has(post.link) }"
+                @click.stop="toggleLike(post)"
+                :disabled="likingUri === post.link"
                 aria-label="좋아요"
               >
-                {{ likedPosts.has(post.id) ? '♥' : '♡' }}
+                {{ likedPosts.has(post.link) ? '♥' : '♡' }}
               </button>
             </li>
           </ul>
@@ -89,8 +89,8 @@ const { showToast } = useToast();
 const posts = ref<Post[]>([]);
 const isLoading = ref(false);
 const error = ref<string | null>(null);
-const likedPosts = ref<Set<number>>(new Set());
-const likingPost = ref<number | null>(null);
+const likedPosts = ref<Set<string>>(new Set());
+const likingUri = ref<string | null>(null);
 
 const avatarUrl = computed(() => {
   if (!props.blogInfo) return '';
@@ -145,20 +145,21 @@ const openPost = (post: Post) => {
   window.open(post.link, '_blank', 'noopener,noreferrer');
 };
 
-const toggleLike = async (postId: number) => {
-  if (likingPost.value === postId) return;
-  likingPost.value = postId;
+const toggleLike = async (post: Post) => {
+  const uri = post.link;
+  if (likingUri.value === uri) return;
+  likingUri.value = uri;
   try {
-    await postApi.like(postId);
-    if (likedPosts.value.has(postId)) {
-      likedPosts.value.delete(postId);
+    await postApi.like(uri);
+    if (likedPosts.value.has(uri)) {
+      likedPosts.value.delete(uri);
     } else {
-      likedPosts.value.add(postId);
+      likedPosts.value.add(uri);
     }
   } catch {
     showToast('좋아요 처리에 실패했습니다.', 'error');
   } finally {
-    likingPost.value = null;
+    likingUri.value = null;
   }
 };
 

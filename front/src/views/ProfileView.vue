@@ -52,6 +52,61 @@
         </div>
       </div>
 
+      <!-- 블로그 인증 -->
+      <div class="profile-view__verify-section">
+        <h3 class="profile-view__section-title">블로그 인증</h3>
+        <p class="profile-view__section-desc">
+          블로그 소유권을 인증하면 누가 내 블로그를 구독하는지 확인할 수 있습니다.
+        </p>
+
+        <div v-if="!verificationStarted" class="profile-view__verify-form">
+          <input
+            type="text"
+            v-model="verifyRssUri"
+            placeholder="내 블로그 RSS URL"
+            class="profile-view__verify-input"
+          />
+          <button
+            class="profile-view__save-btn"
+            @click="getAuthMessage"
+            :disabled="authMsgLoading || !verifyRssUri.trim()"
+          >
+            {{ authMsgLoading ? '생성 중...' : '인증 코드 받기' }}
+          </button>
+        </div>
+
+        <div v-else class="profile-view__verify-steps">
+          <div class="profile-view__step">
+            <span class="profile-view__step-num">1</span>
+            <div class="profile-view__step-body">
+              <p>아래 인증 코드를 블로그에 게시하세요</p>
+              <div class="profile-view__code-box">
+                <code>{{ authMessage }}</code>
+                <button class="profile-view__copy-btn" @click="copyCode">복사</button>
+              </div>
+            </div>
+          </div>
+          <div class="profile-view__step">
+            <span class="profile-view__step-num">2</span>
+            <div class="profile-view__step-body">
+              <p>게시 후 인증 버튼을 눌러주세요</p>
+              <div class="profile-view__verify-actions">
+                <button
+                  class="profile-view__save-btn"
+                  @click="verifyBlog"
+                  :disabled="verifyLoading"
+                >
+                  {{ verifyLoading ? '인증 중...' : '인증 완료 확인' }}
+                </button>
+                <button class="profile-view__action-btn" @click="verificationStarted = false">
+                  취소
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 계정 관리 -->
       <div class="profile-view__account-section">
         <h3 class="profile-view__section-title">계정</h3>
@@ -112,6 +167,51 @@ const saveStatus = async () => {
     showToast('상태 메시지 저장에 실패했습니다.', 'error');
   } finally {
     saving.value = false;
+  }
+};
+
+// Blog verification
+const verifyRssUri = ref('');
+const authMessage = ref('');
+const verificationStarted = ref(false);
+const authMsgLoading = ref(false);
+const verifyLoading = ref(false);
+
+const getAuthMessage = async () => {
+  if (authMsgLoading.value || !verifyRssUri.value.trim()) return;
+  authMsgLoading.value = true;
+  try {
+    const data = await blogApi.getAuthMessage(verifyRssUri.value.trim());
+    authMessage.value = data?.authMessage ?? data?.message ?? '';
+    verificationStarted.value = true;
+  } catch {
+    showToast('인증 코드 생성에 실패했습니다.', 'error');
+  } finally {
+    authMsgLoading.value = false;
+  }
+};
+
+const verifyBlog = async () => {
+  if (verifyLoading.value) return;
+  verifyLoading.value = true;
+  try {
+    await blogApi.verify();
+    showToast('블로그 인증이 완료되었습니다!', 'success');
+    verificationStarted.value = false;
+    verifyRssUri.value = '';
+  } catch {
+    showToast('인증에 실패했습니다. 블로그에 코드가 게시되었는지 확인해주세요.', 'error');
+  } finally {
+    verifyLoading.value = false;
+  }
+};
+
+const copyCode = async () => {
+  try {
+    await navigator.clipboard.writeText(authMessage.value);
+    showToast('인증 코드가 복사되었습니다.', 'success');
+  } catch {
+    showToast('복사에 실패했습니다.', 'error');
   }
 };
 
