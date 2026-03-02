@@ -1,5 +1,5 @@
 <template>
-  <div class="main-canvas" ref="canvasRef">
+  <div class="main-canvas" ref="canvasRef" @click="handleCanvasClick">
     <svg class="main-canvas__svg">
       <!-- 노드 연결선 (그라디언트) -->
       <defs>
@@ -43,7 +43,7 @@
       :style="{ ...node.style, width: currentNodeSize + 'px', height: currentNodeSize + 'px' }"
       @mouseover="handleMouseOver(index)"
       @mouseleave="handleMouseLeave(index)"
-      @click="handleNodeClick(index)"
+      @click.stop="handleNodeClick(index)"
     >
       <!-- 새 포스트 뱃지 -->
       <span v-if="node.newPostsCnt && node.newPostsCnt > 0" class="sub-node__badge">
@@ -148,12 +148,40 @@
       </div>
     </Transition>
 
-    <!-- PostPanel -->
-    <PostPanel
-      v-if="selectedBlog"
-      :blogInfo="selectedBlog"
-      @close="selectedBlog = null"
-    />
+    <!-- 노드 클릭 시 팝오버 -->
+    <Transition name="popover">
+      <div
+        v-if="selectedIndex !== null && visibleNodes[selectedIndex]"
+        class="node-popover"
+        :style="popoverStyle"
+        @click.stop
+      >
+        <div class="node-popover__header">
+          <img
+            class="node-popover__avatar"
+            :src="popoverAvatarUrl"
+            :alt="visibleNodes[selectedIndex].nickName"
+          />
+          <div class="node-popover__title">
+            <span class="node-popover__nick">{{ visibleNodes[selectedIndex].nickName || '블로그' }}</span>
+            <span class="node-popover__url">{{ popoverDisplayUrl }}</span>
+          </div>
+        </div>
+        <div class="node-popover__stats">
+          <span class="node-popover__stat">
+            <span class="node-popover__stat-icon">👁</span>
+            {{ visibleNodes[selectedIndex].visitCnt ?? 0 }}회
+          </span>
+          <span class="node-popover__stat">
+            <span class="node-popover__stat-icon">📝</span>
+            {{ visibleNodes[selectedIndex].newPostsCnt ?? 0 }}개 새글
+          </span>
+        </div>
+        <button class="node-popover__visit" @click="visitSelectedBlog">
+          블로그 방문 ↗
+        </button>
+      </div>
+    </Transition>
 
     <!-- 노드 없을 때 안내 -->
     <div v-if="visibleNodes.length === 0 && !isLoadingNodes" class="main-canvas__empty">
@@ -171,12 +199,12 @@ import { useSubscriptionStore } from '@/stores/subscription';
 import { useToast } from '@/composables/useToast';
 import { getAccessTokenFromCookie, deleteCookieFromBrowser } from '@/utils/cookie';
 import { authApi } from '@/services/api';
-import PostPanel from '@/components/PostPanel.vue';
+import { getFaviconUrl } from '@/utils/favicon';
 import type { BlogInfo, BlogNode } from '@/types';
 
 export default defineComponent({
   name: 'MainView',
-  components: { PostPanel },
+  components: {},
   props: {
     isLoggedIn: { type: Boolean, default: false },
     showLoginModal: { type: Boolean, default: false },
@@ -246,9 +274,10 @@ export default defineComponent({
     const createNodeFromBlog = (blog: any): BlogNode => {
       const initialPosition = getRandomPosition();
       const bounds = getInitialBounds(initialPosition);
+      const blogUrl = blog.blogUrl ?? blog.uri ?? blog.url;
       const displayThumb =
         blog.thumbnailUrl ||
-        `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(blog.nickName || 'B')}`;
+        getFaviconUrl(blogUrl);
 
       return {
         position: { ...initialPosition },
@@ -267,6 +296,7 @@ export default defineComponent({
         blogUrl: blog.blogUrl ?? blog.uri ?? blog.url,
         newPostsCnt: blog.newPostsCnt ?? 0,
         visitCnt: blog.visitCnt ?? 0,
+        publishedDateTime: blog.publishedDateTime ?? null,
       };
     };
 
@@ -328,18 +358,71 @@ export default defineComponent({
       nodes[index].style.zIndex = '0';
     };
 
-    // 노드 클릭 → PostPanel 오픈
-    const selectedBlog = ref<BlogInfo | null>(null);
+    // 노드 클릭 → 팝오버 표시 & 모든 노드 멈춤
+    const selectedIndex = ref<number | null>(null);
 
     const handleNodeClick = (index: number) => {
-      const node = nodes[index];
-      if (!node) return;
-      selectedBlog.value = {
-        subscriptionId: node.subscriptionId,
-        blogUrl: node.blogUrl ?? '',
-        nickName: node.nickName ?? '',
-        thumbnailUrl: node.thumbnailUrl,
-      };
+      if (selectedIndex.value === index) {
+        closePopover();
+        return;
+      }
+      selectedIndex.value = index;
+      // 모든 노드 멈춤
+      nodes.forEach((node) => { node.isStopped = true; });
+    };
+
+    const closePopover = () => {
+      selectedIndex.value = null;
+      // 모든 노드 다시 움직임
+      nodes.forEach((node) => { node.isStopped = false; });
+    };
+
+    const popoverStyle = computed(() => {
+      if (selectedIndex.value === null || !visibleNodes.value[selectedIndex.value]) return {};
+      const node = visibleNodes.value[selectedIndex.value];
+      const popoverWidth = 240;
+      const popoverHeight = 160;
+      const gap = 8;
+      let x = node.position.x + currentNodeSize.value + gap;
+      let y = node.position.y - gap;
+
+      // 오른쪽 화면 밖으로 나가면 왼쪽에 표시
+      if (x + popoverWidth > window.innerWidth - 16) {
+        x = node.position.x - popoverWidth - gap;
+      }
+      // 위로 나가면 아래로
+      if (y < 16) {
+        y = 16;
+      }
+      // 아래로 나가면 올림
+      if (y + popoverHeight > window.innerHeight - 16) {
+        y = window.innerHeight - popoverHeight - 16;
+      }
+      return { top: `${y}px`, left: `${x}px` };
+    });
+
+    const popoverAvatarUrl = computed(() => {
+      if (selectedIndex.value === null || !visibleNodes.value[selectedIndex.value]) return '';
+      const node = visibleNodes.value[selectedIndex.value];
+      return node.thumbnailUrl || getFaviconUrl(node.blogUrl);
+    });
+
+    const popoverDisplayUrl = computed(() => {
+      if (selectedIndex.value === null || !visibleNodes.value[selectedIndex.value]) return '';
+      const blogUrl = visibleNodes.value[selectedIndex.value].blogUrl;
+      if (!blogUrl) return '';
+      try { return new URL(blogUrl).hostname; } catch { return blogUrl; }
+    });
+
+    const visitSelectedBlog = () => {
+      if (selectedIndex.value === null || !visibleNodes.value[selectedIndex.value]) return;
+      const blogUrl = visibleNodes.value[selectedIndex.value].blogUrl;
+      if (blogUrl) window.open(blogUrl, '_blank', 'noopener,noreferrer');
+    };
+
+    // 캔버스 클릭 시 팝오버 닫기
+    const handleCanvasClick = () => {
+      if (selectedIndex.value !== null) closePopover();
     };
 
     // props 기반 모달 상태
@@ -370,7 +453,7 @@ export default defineComponent({
       if (props.showLoginModal) closeLoginModal();
       else if (showSignupModal.value) closeSignupModal();
       else if (props.showSubscribeModal) closeSubscribeModal();
-      else if (selectedBlog.value) selectedBlog.value = null;
+      else if (selectedIndex.value !== null) closePopover();
     };
 
     const handleResize = () => {
@@ -497,7 +580,12 @@ export default defineComponent({
       isLoggedIn: computed(() => props.isLoggedIn),
       visibleNodes,
       visibleNodeCount,
-      selectedBlog,
+      selectedIndex,
+      popoverStyle,
+      popoverAvatarUrl,
+      popoverDisplayUrl,
+      visitSelectedBlog,
+      handleCanvasClick,
       loginForm,
       signupForm,
       subscribeForm,
@@ -630,6 +718,110 @@ export default defineComponent({
   white-space: nowrap;
   pointer-events: none;
   z-index: 100;
+}
+
+// 노드 팝오버
+.node-popover {
+  position: absolute;
+  width: 240px;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(16px);
+  border: 1px solid #e8e8e8;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 16px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #eee;
+    background: #f5f5f5;
+    flex-shrink: 0;
+  }
+
+  &__title {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  &__nick {
+    font-size: 14px;
+    font-weight: 700;
+    color: #222;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__url {
+    font-size: 11px;
+    color: #999;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__stats {
+    display: flex;
+    gap: 12px;
+  }
+
+  &__stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #666;
+    font-weight: 500;
+  }
+
+  &__stat-icon {
+    font-size: 13px;
+  }
+
+  &__visit {
+    width: 100%;
+    padding: 9px 0;
+    border: none;
+    border-radius: 10px;
+    background: #007bff;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    text-align: center;
+
+    &:hover {
+      background: #0056b3;
+    }
+  }
+}
+
+// 팝오버 트랜지션
+.popover-enter-active,
+.popover-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.popover-enter-from,
+.popover-leave-to {
+  opacity: 0;
+  transform: scale(0.92) translateY(4px);
 }
 
 // 모달

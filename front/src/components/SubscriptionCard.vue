@@ -34,6 +34,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { getFaviconUrl } from '@/utils/favicon';
 import type { SubscriptionResponse } from '@/types';
 
 const props = defineProps<{
@@ -50,7 +51,7 @@ const deleting = ref(false);
 const avatarUrl = computed(() => {
   return (
     props.subscription.thumbnailUrl ||
-    `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(props.subscription.nickName || 'B')}`
+    getFaviconUrl(props.subscription.uri)
   );
 });
 

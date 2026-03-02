@@ -17,7 +17,7 @@
             />
             <div class="post-panel__blog-meta">
               <span class="post-panel__nick">{{ blogInfo.nickName }}</span>
-              <span class="post-panel__post-count">{{ posts.length }}개 포스트</span>
+              <span class="post-panel__blog-url">{{ displayUrl }}</span>
             </div>
           </div>
           <button class="post-panel__close" @click="$emit('close')" aria-label="닫기">
@@ -25,44 +25,51 @@
           </button>
         </div>
 
-        <!-- 포스트 목록 -->
+        <!-- 블로그 정보 -->
         <div class="post-panel__body">
-          <div v-if="isLoading" class="post-panel__spinner">
-            <span class="spinner" />
-          </div>
-
-          <div v-else-if="error" class="post-panel__error">
-            <span class="post-panel__error-icon">!</span>
-            <p>{{ error }}</p>
-            <button class="post-panel__retry" @click="retry">다시 시도</button>
-          </div>
-
-          <ul v-else-if="posts.length > 0" class="post-panel__list">
-            <li
-              v-for="post in posts"
-              :key="post.id"
-              class="post-panel__item"
-              @click="openPost(post)"
-            >
-              <div class="post-panel__item-content">
-                <p class="post-panel__title">{{ post.title }}</p>
-                <span class="post-panel__date">{{ formatDate(post.publishedAt) }}</span>
+          <!-- 통계 카드 -->
+          <div class="post-panel__stats">
+            <div class="post-panel__stat-card">
+              <span class="post-panel__stat-icon">👁</span>
+              <div class="post-panel__stat-detail">
+                <span class="post-panel__stat-value">{{ blogInfo.visitCnt ?? 0 }}</span>
+                <span class="post-panel__stat-label">방문 횟수</span>
               </div>
-              <button
-                class="post-panel__like"
-                :class="{ 'post-panel__like--active': likedPosts.has(post.link) }"
-                @click.stop="toggleLike(post)"
-                :disabled="likingUri === post.link"
-                aria-label="좋아요"
-              >
-                {{ likedPosts.has(post.link) ? '♥' : '♡' }}
-              </button>
-            </li>
-          </ul>
+            </div>
+            <div class="post-panel__stat-card">
+              <span class="post-panel__stat-icon">📝</span>
+              <div class="post-panel__stat-detail">
+                <span class="post-panel__stat-value">{{ blogInfo.newPostsCnt ?? 0 }}</span>
+                <span class="post-panel__stat-label">새 포스트</span>
+              </div>
+            </div>
+          </div>
 
-          <div v-else class="post-panel__empty">
-            <span class="post-panel__empty-icon">📭</span>
-            <p>포스트가 없습니다.</p>
+          <!-- 최근 업데이트 -->
+          <div v-if="blogInfo.publishedDateTime" class="post-panel__last-update">
+            <span class="post-panel__update-label">최근 업데이트</span>
+            <span class="post-panel__update-value">{{ formatDate(blogInfo.publishedDateTime) }}</span>
+          </div>
+
+          <!-- 블로그 URL 정보 -->
+          <div class="post-panel__url-section">
+            <span class="post-panel__url-label">블로그 주소</span>
+            <a
+              :href="blogInfo.blogUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="post-panel__url-link"
+            >
+              {{ blogInfo.blogUrl }}
+              <span class="post-panel__external-icon">↗</span>
+            </a>
+          </div>
+
+          <!-- 방문 버튼 -->
+          <div class="post-panel__actions">
+            <button class="post-panel__visit-btn" @click="visitBlog">
+              블로그 방문하기
+            </button>
           </div>
         </div>
       </div>
@@ -71,10 +78,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
-import { subscriptionApi, postApi } from '@/services/api';
-import { useToast } from '@/composables/useToast';
-import type { BlogInfo, Post } from '@/types';
+import { computed } from 'vue';
+import { getFaviconUrl } from '@/utils/favicon';
+import type { BlogInfo } from '@/types';
 
 const props = defineProps<{
   blogInfo: BlogInfo | null;
@@ -84,82 +90,27 @@ defineEmits<{
   (e: 'close'): void;
 }>();
 
-const { showToast } = useToast();
-
-const posts = ref<Post[]>([]);
-const isLoading = ref(false);
-const error = ref<string | null>(null);
-const likedPosts = ref<Set<string>>(new Set());
-const likingUri = ref<string | null>(null);
-
 const avatarUrl = computed(() => {
   if (!props.blogInfo) return '';
   return (
     props.blogInfo.thumbnailUrl ||
-    `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(props.blogInfo.nickName || 'B')}`
+    getFaviconUrl(props.blogInfo.blogUrl)
   );
 });
 
-const fetchPosts = async (info: BlogInfo) => {
-  isLoading.value = true;
-  error.value = null;
-  posts.value = [];
-
+const displayUrl = computed(() => {
+  if (!props.blogInfo?.blogUrl) return '';
   try {
-    // 방문 추적
-    if (info.subscriptionId) {
-      subscriptionApi.visit(info.subscriptionId).catch(() => {});
-    }
-
-    if (info.subscriptionId) {
-      posts.value = await subscriptionApi.getPosts(info.subscriptionId);
-    } else {
-      posts.value = await subscriptionApi.getPostsByBlogUrl(info.blogUrl);
-    }
-  } catch (err) {
-    error.value = '포스트를 불러오지 못했습니다.';
-    console.error(err);
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-const retry = () => {
-  if (props.blogInfo) fetchPosts(props.blogInfo);
-};
-
-watch(
-  () => props.blogInfo,
-  (info) => {
-    if (info) fetchPosts(info);
-    else posts.value = [];
-  },
-  { immediate: true }
-);
-
-const openPost = (post: Post) => {
-  // 포스트별 방문 추적
-  if (props.blogInfo?.subscriptionId) {
-    subscriptionApi.visitPost(props.blogInfo.subscriptionId, post.link).catch(() => {});
-  }
-  window.open(post.link, '_blank', 'noopener,noreferrer');
-};
-
-const toggleLike = async (post: Post) => {
-  const uri = post.link;
-  if (likingUri.value === uri) return;
-  likingUri.value = uri;
-  try {
-    await postApi.like(uri);
-    if (likedPosts.value.has(uri)) {
-      likedPosts.value.delete(uri);
-    } else {
-      likedPosts.value.add(uri);
-    }
+    const url = new URL(props.blogInfo.blogUrl);
+    return url.hostname;
   } catch {
-    showToast('좋아요 처리에 실패했습니다.', 'error');
-  } finally {
-    likingUri.value = null;
+    return props.blogInfo.blogUrl;
+  }
+});
+
+const visitBlog = () => {
+  if (props.blogInfo?.blogUrl) {
+    window.open(props.blogInfo.blogUrl, '_blank', 'noopener,noreferrer');
   }
 };
 
@@ -173,8 +124,11 @@ const formatDate = (dateStr: string): string => {
   if (diffHours < 1) return '방금 전';
   if (diffHours < 24) return `${diffHours}시간 전`;
   const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 0) return '오늘';
+  if (diffDays === 1) return '어제';
   if (diffDays < 7) return `${diffDays}일 전`;
-  return d.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}주 전`;
+  return d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 };
 </script>
 
@@ -217,32 +171,42 @@ const formatDate = (dateStr: string): string => {
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
+    flex: 1;
   }
 
   &__blog-meta {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
   }
 
   &__avatar {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid #eee;
     background: #f5f5f5;
+    flex-shrink: 0;
   }
 
   &__nick {
     font-size: 16px;
     font-weight: 700;
     color: #222;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  &__post-count {
+  &__blog-url {
     font-size: 12px;
-    color: #aaa;
+    color: #999;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   &__close {
@@ -254,6 +218,7 @@ const formatDate = (dateStr: string): string => {
     padding: 4px 8px;
     border-radius: 8px;
     transition: background 0.2s, color 0.2s;
+    flex-shrink: 0;
 
     &:hover {
       background: #f0f0f0;
@@ -264,160 +229,141 @@ const formatDate = (dateStr: string): string => {
   &__body {
     flex: 1;
     overflow-y: auto;
-    padding: 16px 0;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
   }
 
-  &__list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  &__stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
   }
 
-  &__item {
+  &__stat-card {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 14px 24px;
-    cursor: pointer;
-    border-bottom: 1px solid #f5f5f5;
-    transition: background 0.15s;
-
-    &:last-child {
-      border-bottom: none;
-    }
-
-    &:hover {
-      background: #f9f9f9;
-    }
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 14px;
+    border: 1px solid #f0f0f0;
   }
 
-  &__item-content {
-    flex: 1;
-    min-width: 0;
-  }
-
-  &__title {
-    margin: 0 0 4px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #222;
-    line-height: 1.5;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  &__date {
-    font-size: 12px;
-    color: #aaa;
-  }
-
-  &__like {
+  &__stat-icon {
+    font-size: 24px;
     flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-    border: none;
-    background: transparent;
-    font-size: 18px;
-    cursor: pointer;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    color: #ccc;
-
-    &:hover {
-      background: #fef2f2;
-      color: #ef4444;
-    }
-
-    &--active {
-      color: #ef4444;
-    }
-
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
   }
 
-  &__retry {
-    margin-top: 12px;
-    padding: 8px 20px;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    background: #fff;
-    color: #555;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s;
-
-    &:hover {
-      background: #f5f5f5;
-    }
-  }
-
-  &__spinner {
-    display: flex;
-    justify-content: center;
-    padding: 48px 0;
-  }
-
-  &__error {
-    text-align: center;
-    padding: 48px 24px;
-    font-size: 14px;
-    color: #e55;
+  &__stat-detail {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    gap: 2px;
   }
 
-  &__error-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: #fef2f2;
-    color: #ef4444;
-    font-size: 18px;
+  &__stat-value {
+    font-size: 20px;
     font-weight: 700;
-    margin-bottom: 12px;
+    color: #222;
+    line-height: 1.2;
   }
 
-  &__empty {
-    text-align: center;
-    padding: 48px 24px;
-    font-size: 14px;
-    color: #aaa;
+  &__stat-label {
+    font-size: 11px;
+    color: #999;
+    font-weight: 500;
+  }
+
+  &__last-update {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 1px solid #f0f0f0;
+  }
+
+  &__update-label {
+    font-size: 13px;
+    color: #888;
+    font-weight: 500;
+  }
+
+  &__update-value {
+    font-size: 13px;
+    color: #444;
+    font-weight: 600;
+  }
+
+  &__url-section {
     display: flex;
     flex-direction: column;
+    gap: 8px;
+  }
+
+  &__url-label {
+    font-size: 12px;
+    color: #999;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  &__url-link {
+    display: flex;
     align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #007bff;
+    text-decoration: none;
+    word-break: break-all;
+    line-height: 1.5;
+    transition: color 0.2s;
+
+    &:hover {
+      color: #0056b3;
+      text-decoration: underline;
+    }
   }
 
-  &__empty-icon {
-    font-size: 36px;
-    margin-bottom: 8px;
-    opacity: 0.6;
+  &__external-icon {
+    flex-shrink: 0;
+    font-size: 14px;
   }
-}
 
-.spinner {
-  display: inline-block;
-  width: 32px;
-  height: 32px;
-  border: 3px solid #eee;
-  border-top-color: #007bff;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
+  &__actions {
+    margin-top: auto;
+    padding-top: 16px;
+  }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+  &__visit-btn {
+    width: 100%;
+    padding: 14px 24px;
+    border: none;
+    border-radius: 14px;
+    background: #007bff;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    &:hover {
+      background: #0056b3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
 }
 
 // 슬라이드 트랜지션
