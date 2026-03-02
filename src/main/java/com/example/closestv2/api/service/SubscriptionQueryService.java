@@ -21,7 +21,7 @@ public class SubscriptionQueryService implements SubscriptionQueryUsecase {
 
     @Override
     public List<SubscriptionResponse> getCloseSubscriptionsOfAll() {
-        List<SubscriptionRoot> subscriptionRoots = subscriptionQueryRepository.findAllOrderByVisitCountDesc(0, 20);
+        List<SubscriptionRoot> subscriptionRoots = subscriptionQueryRepository.findAllOrderByVisitCountDesc(0, 200);
         return extractSubscriptionResponses(subscriptionRoots, new ArrayList<>());
     }
 

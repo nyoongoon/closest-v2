@@ -62,6 +62,8 @@ public class SecurityConfig {
                                 .requestMatchers(
                                         "/h2-console/**"
                                         , "/member/auth/**"
+                                        , "/subscriptions/blogs/close"
+                                        , "/posts/recent"
                                 )
                                 .permitAll()
                                 .anyRequest()

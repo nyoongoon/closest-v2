@@ -39,3 +39,34 @@ out/
 
 ### Open Api Code Gen ##
 /src/main/openapi-generated/
+
+### Sensitive / Secret Files ###
+.env
+.env.*
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+*.pfx
+*.crt
+*.cer
+*.der
+*.csr
+*-secret*
+*credential*
+application-secret*.yml
+application-secret*.yaml
+application-secret*.properties
+application-prod*.yml
+application-prod*.yaml
+application-prod*.properties
+
+### OS / Misc ###
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~

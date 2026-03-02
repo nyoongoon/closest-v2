@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -25,13 +26,15 @@ import static com.example.closestv2.api.exception.ExceptionMessageConstants.NOT_
 @RequiredArgsConstructor
 public class BlogSchedulerService {
     private static final int PAGE_SIZE = 100;
+    private static final long REQUEST_DELAY_MS = 1000; // 요청 간 1초 딜레이 (서버 부하 방지)
     private final BlogRepository blogRepository;
     private final FeedClient rssFeedClient;
 
     // CompletableFuture<Void>를 반환하게 하여 테스트 시 완료 시점을 체크할 수 있도록 한다.
     @Transactional(readOnly = true)
-//    @Scheduled(fixedDelay = 10000) //todo 개발 편의를 위해 일단 스케듈 멈춤
+    @Scheduled(fixedDelay = 600_000, initialDelay = 10_000) // 10분 간격, 서버 시작 10초 후 첫 실행
     public CompletableFuture<Void> pollingUpdatedBlogs() {
+        log.info("RSS 폴링 스케줄러 시작");
         return CompletableFuture.runAsync(() -> {
             int page = 0;
             boolean hasMore = true;
@@ -41,28 +44,28 @@ public class BlogSchedulerService {
                 List<BlogRoot> blogRoots = blogPage.getContent();
                 hasMore = blogPage.hasNext();
 
-                // 비동기 처리
-                List<CompletableFuture<Void>> futures = blogRoots.stream()
-                        .map(blogRoot ->
-                                CompletableFuture
-                                        .supplyAsync(
-                                                // 비동기 호출
-                                                () -> rssFeedClient.getFeed(blogRoot.getBlogInfo().getRssUrl()))
-                                        .thenAccept(feed -> {
-                                            try {
-                                                // 콜백
-                                                updateBlogBySyndFeed(blogRoot.getId(), feed);
-                                            } catch (MalformedURLException | URISyntaxException e) {
-                                                log.error("BlogSchedulerService#pollingUpdatedBlogs : {} - {}", e.getClass(), e.getMessage());
-                                            }
-                                        }))
-                        .toList();
-
-                // 모든 CompletableFuture가 끝날 때까지 기다림
-                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join(); // 이렇게하면 여기까지 동기인데 .. 페이징 구간이 비동기
+                // 순차 처리 (요청 간 딜레이를 두어 공격으로 의심받지 않도록)
+                List<CompletableFuture<Void>> futures = new ArrayList<>();
+                for (BlogRoot blogRoot : blogRoots) {
+                    try {
+                        Feed feed = rssFeedClient.getFeed(blogRoot.getBlogInfo().getRssUrl());
+                        updateBlogBySyndFeed(blogRoot.getId(), feed);
+                    } catch (Exception e) {
+                        log.warn("RSS 폴링 실패 - blogId: {}, url: {}, error: {}",
+                                blogRoot.getId(), blogRoot.getBlogInfo().getRssUrl(), e.getMessage());
+                    }
+                    // 요청 간 딜레이
+                    try {
+                        Thread.sleep(REQUEST_DELAY_MS);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                }
 
                 page++;
             }
+            log.info("RSS 폴링 스케줄러 완료");
         });
     }
 

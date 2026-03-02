@@ -28,12 +28,13 @@ onUnmounted(() => {
   if (authCheckInterval) clearInterval(authCheckInterval);
 });
 
-// 로그인 시 구독 목록 로드
+// 로그인 상태에 따라 구독 목록 로드 (비회원도 기본 유명 블로거 표시)
 watch(isLoggedIn, (val) => {
   if (val) {
     subscriptionStore.fetchCloseBlogs();
   } else {
     subscriptionStore.$reset();
+    subscriptionStore.fetchCloseBlogs(); // 비회원: 기본 유명 블로거 데이터 로드
   }
 }, { immediate: true });
 

@@ -5,6 +5,7 @@ import type {
   SubscribeRequest,
   SubscriptionResponse,
   Post,
+  RecentPost,
   StatusRequest,
 } from '@/types';
 
@@ -95,5 +96,9 @@ export const blogApi = {
 export const postApi = {
   like(postUri: string) {
     return fetchWrapper.post('/api/posts/like', { postUri });
+  },
+
+  getRecentPosts(limit = 30): Promise<RecentPost[]> {
+    return fetchWrapper.get(`/api/posts/recent?limit=${limit}`, null);
   },
 };

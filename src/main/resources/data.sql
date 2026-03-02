@@ -3275,3 +3275,27 @@ VALUES ('https://goalinnext.tistory.com/rss', 'https://goalinnext.tistory.com/rs
         0),
        ('https://v2.velog.io/rss/kwonhl0211', 'https://v2.velog.io/rss/kwonhl0211', '제목1844', '작가1844',
         '2000-01-01 00:00:00', 0);
+
+-- ── 비회원용 기본 구독 데이터: 유명 한국 블로거 ──
+INSERT INTO subscription (member_email, subscription_visit_count, subscription_nick_name, blog_url, blog_title, published_date_time, new_post_count, thumbnail_url)
+VALUES
+  ('system@closest.local', 0, '우아한형제들 기술블로그', 'https://techblog.woowahan.com', '우아한형제들 기술블로그', '2026-02-28 10:00:00', 0, NULL),
+  ('system@closest.local', 0, '카카오 기술블로그', 'https://tech.kakao.com', '카카오 기술블로그', '2026-02-27 14:30:00', 0, NULL),
+  ('system@closest.local', 0, '토스 기술블로그', 'https://toss.tech', '토스 기술블로그', '2026-02-26 09:00:00', 0, NULL),
+  ('system@closest.local', 0, '네이버 D2', 'https://d2.naver.com', '네이버 D2', '2026-02-25 11:00:00', 0, NULL),
+  ('system@closest.local', 0, '당근마켓 기술블로그', 'https://medium.com/daangn', '당근마켓 기술블로그', '2026-02-24 16:00:00', 0, NULL),
+  ('system@closest.local', 0, '라인 기술블로그', 'https://engineering.linecorp.com', '라인 기술블로그', '2026-02-23 13:00:00', 0, NULL),
+  ('system@closest.local', 0, '향로 (jojoldu)', 'https://jojoldu.tistory.com', '향로 기술블로그', '2026-02-28 08:00:00', 0, NULL),
+  ('system@closest.local', 0, '생활코딩', 'https://opentutorials.org', '생활코딩', '2026-02-20 10:00:00', 0, NULL),
+  ('system@closest.local', 0, '아웃사이더', 'https://blog.outsider.ne.kr', '아웃사이더 기술블로그', '2026-02-22 09:30:00', 0, NULL),
+  ('system@closest.local', 0, '변성윤 (zzsza)', 'https://zzsza.github.io', 'DataEngineer 기술블로그', '2026-02-21 15:00:00', 0, NULL),
+  ('system@closest.local', 0, 'Evan Moon', 'https://evan-moon.github.io', 'Evan Moon 블로그', '2026-02-19 12:00:00', 0, NULL),
+  ('system@closest.local', 0, 'Heropy', 'https://heropy.blog', 'HEROPY Tech', '2026-02-18 14:00:00', 0, NULL),
+  ('system@closest.local', 0, '조대협 (bcho)', 'https://bcho.tistory.com', '조대협의 블로그', '2026-02-17 10:00:00', 0, NULL),
+  ('system@closest.local', 0, '김정환', 'https://jeonghwan-kim.github.io', '김정환 블로그', '2026-02-16 11:30:00', 0, NULL),
+  ('system@closest.local', 0, '44bits', 'https://44bits.io', '44BITS 기술블로그', '2026-02-15 09:00:00', 0, NULL),
+  ('system@closest.local', 0, 'Popit', 'https://www.popit.kr', 'Popit 기술블로그', '2026-02-14 16:00:00', 0, NULL),
+  ('system@closest.local', 0, '쿠팡 기술블로그', 'https://medium.com/coupang-engineering', '쿠팡 기술블로그', '2026-02-13 10:00:00', 0, NULL),
+  ('system@closest.local', 0, 'NHN Cloud 기술블로그', 'https://meetup.nhncloud.com', 'NHN Cloud Meetup', '2026-02-12 14:00:00', 0, NULL),
+  ('system@closest.local', 0, '데보션 (SKT)', 'https://devocean.sk.com', 'SKT DEVOCEAN', '2026-02-11 09:00:00', 0, NULL),
+  ('system@closest.local', 0, '요즘IT', 'https://yozm.wishket.com', '요즘IT', '2026-02-10 11:00:00', 0, NULL);
