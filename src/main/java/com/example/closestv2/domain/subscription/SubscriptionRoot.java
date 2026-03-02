@@ -71,6 +71,7 @@ public class SubscriptionRoot {
                 subscriptionInfo = SubscriptionInfo.builder()
                                 .memberEmail(subscriptionInfo.getMemberEmail())
                                 .subscriptionVisitCount(plusedVisitCount)
+                                .subscriptionNickName(subscriptionInfo.getSubscriptionNickName())
                                 .build();
                 return new SubscriptionsBlogVisitEvent(id, subscriptionBlog.getBlogUrl());
         }
@@ -82,6 +83,7 @@ public class SubscriptionRoot {
                 subscriptionInfo = SubscriptionInfo.builder()
                                 .memberEmail(subscriptionInfo.getMemberEmail())
                                 .subscriptionVisitCount(plusedVisitCount)
+                                .subscriptionNickName(subscriptionInfo.getSubscriptionNickName())
                                 .build();
                 return new SubscriptionsPostVisitEvent(id, subscriptionBlog.getBlogUrl(), postUrl);
         }
@@ -96,6 +98,7 @@ public class SubscriptionRoot {
                                 .blogTitle(subscriptionBlog.getBlogTitle())
                                 .publishedDateTime(publishedDateTime)
                                 .newPostCount(newPostCount)
+                                .thumbnailUrl(subscriptionBlog.getThumbnailUrl())
                                 .build();
         }
 

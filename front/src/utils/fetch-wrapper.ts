@@ -1,4 +1,5 @@
 import {useAuthStore} from '@/stores';
+import {toastBus} from '@/composables/useToast';
 
 export const fetchWrapper = {
     get: request('GET'),
@@ -10,10 +11,9 @@ export const fetchWrapper = {
 function request(method: string) {
     return (url: string, body: any, options: { credentials?: any } = {}) => {
         const {credentials} = options;
-        const requestOptions = {
+        const requestOptions: RequestInit & { headers: Record<string, string> } = {
             method,
             headers: authHeader(url),
-            body,
             credentials,
         };
         if (body) {
@@ -25,17 +25,18 @@ function request(method: string) {
         }
         return fetch(url, requestOptions)
             .then(handleResponse)
-            .catch((error) => {
-                console.log(error);
-                alert(error);
-                alert(error.response.data.message);
+            .catch((error: unknown) => {
+                console.error(error);
+                const message = typeof error === 'string' ? error : '요청 중 오류가 발생했습니다.';
+                toastBus.emit('show', { message, type: 'error' });
+                return Promise.reject(error);
             });
-    }
+    };
 }
 
 // helper functions
 
-function authHeader(url: string): { [key: string]: string } {
+function authHeader(url: string): Record<string, string> {
     // return auth header with jwt if user is logged in and request is to the api url
     const {user} = useAuthStore();
     const isLoggedIn = !!user?.jwtToken;
@@ -47,9 +48,9 @@ function authHeader(url: string): { [key: string]: string } {
     }
 }
 
-function handleResponse(response: any) {
-    return response.text().then((text: string | undefined | null) => {
-        const data = text && JSON.parse(text);
+function handleResponse(response: Response) {
+    return response.text().then((text: string) => {
+        const data = text ? JSON.parse(text) : null;
 
         if (!response.ok) {
             const {user, logout} = useAuthStore();
@@ -64,4 +65,4 @@ function handleResponse(response: any) {
 
         return data;
     });
-}    
+}

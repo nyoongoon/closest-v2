@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 public class PostLikeController implements PostLikeApi {
-    private PostLikeUsecase postLikeUsecase;
+    private final PostLikeUsecase postLikeUsecase;
 
     @Override
     public ResponseEntity<Void> postsLikePost(PostsLikePostRequest request) {
