@@ -3,7 +3,6 @@ import {defineStore} from 'pinia';
 import {fetchWrapper} from '@/utils';
 import {useRouter} from "vue-router";
 
-const router = useRouter();
 const baseUrl = `/api/member/auth`;
 
 type User = {
@@ -32,7 +31,8 @@ export const useAuthStore = defineStore({
             fetchWrapper.post(`${baseUrl}/revoke-token`, {}, {credentials: 'include'});
             this.stopRefreshTokenTimer();
             this.user = null;
-            router.push('/login');
+            const router = useRouter();
+            router.push('/');
         },
         async refreshToken() {
             this.user = await fetchWrapper.post(`${baseUrl}/refresh-token`, {}, {credentials: 'include'});

@@ -1,5 +1,6 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import MainView from "@/views/MainView.vue";
+import { createRouter, createWebHistory } from 'vue-router';
+import MainView from '@/views/MainView.vue';
+import { getAccessTokenFromCookie } from '@/utils/cookie';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -7,41 +8,28 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: MainView
-    }
-    // ,
-    // {
-    //   path: "/write",
-    //   name: "write",
-    //   component: WriteView
-    // },
-    // {
-    //   path: "/read/:postId",
-    //   name: "read",
-    //   component: ReadView,
-    //   props: true,
-    // },
-    // {
-    //   path: "/edit/:postId",
-    //   name: "edit",
-    //   component: EditView,
-    //   props: true,
-    // },
-    // {
-    //   path: "/example",
-    //   name: "example",
-    //   component: ExampleView,
-    //   props: true,
-    // },
-    // {
-    //   path: '/about',
-    //   name: 'about',
-    //   // route level code-splitting
-    //   // this generates a separate chunk (About.[hash].js) for this route
-    //   // which is lazy-loaded when the route is visited.
-    //   component: () => import('../views/AboutView.vue')
-    // }
-  ]
-})
+      component: MainView,
+    },
+    {
+      path: '/subscriptions',
+      name: 'subscriptions',
+      component: () => import('@/views/SubscriptionListView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('@/views/ProfileView.vue'),
+      meta: { requiresAuth: true },
+    },
+  ],
+});
 
-export default router
+// 인증 가드
+router.beforeEach((to) => {
+  if (to.meta.requiresAuth && !getAccessTokenFromCookie()) {
+    return { name: 'home' };
+  }
+});
+
+export default router;
