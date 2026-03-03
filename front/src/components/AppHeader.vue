@@ -1,378 +1,169 @@
 <template>
-  <header class="app-header" :class="{ 'app-header--hidden': isHidden }">
-    <div class="app-header__inner">
-      <router-link to="/" class="app-header__logo">
-        <span class="app-header__logo-icon">◉</span>
-        <span class="app-header__logo-text">Closest</span>
-      </router-link>
+  <div class="floating-ui">
+    <!-- 좌상단: 로고 -->
+    <router-link to="/" class="floating-ui__logo">
+      <span class="floating-ui__logo-icon">◉</span>
+      <span class="floating-ui__logo-text">Closest</span>
+    </router-link>
 
-      <nav class="app-header__nav">
-        <router-link to="/" class="app-header__link" active-class="app-header__link--active" exact>
-          홈
-        </router-link>
+    <!-- 우상단: 액션 -->
+    <div class="floating-ui__actions">
+      <template v-if="isLoggedIn">
         <router-link
-          v-if="isLoggedIn"
           to="/subscriptions"
-          class="app-header__link"
-          active-class="app-header__link--active"
+          class="floating-ui__pill"
+          title="구독 목록"
         >
-          구독 목록
-          <span v-if="newPostCount > 0" class="app-header__badge">{{ newPostCount }}</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+          <span v-if="newPostCount > 0" class="floating-ui__badge">{{ newPostCount }}</span>
         </router-link>
-        <router-link
-          v-if="isLoggedIn"
-          to="/profile"
-          class="app-header__link"
-          active-class="app-header__link--active"
-        >
-          프로필
-        </router-link>
-      </nav>
-
-      <div class="app-header__actions">
-        <template v-if="isLoggedIn">
-          <button class="app-header__btn app-header__btn--subscribe" @click="$emit('subscribe')">
-            + 구독
-          </button>
-          <button class="app-header__btn app-header__btn--logout" @click="handleLogout">
-            로그아웃
-          </button>
-        </template>
-        <template v-else>
-          <button class="app-header__btn app-header__btn--login" @click="$emit('login')">
-            로그인
-          </button>
-        </template>
-      </div>
-
-      <!-- 모바일 메뉴 토글 -->
-      <button class="app-header__hamburger" @click="mobileOpen = !mobileOpen" aria-label="메뉴">
-        <span :class="{ open: mobileOpen }"></span>
-      </button>
+        <button class="floating-ui__pill floating-ui__pill--primary" @click="$emit('subscribe')">
+          +
+        </button>
+        <button class="floating-ui__pill" @click="$emit('logout')" title="로그아웃">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
+      </template>
+      <template v-else>
+        <button class="floating-ui__pill floating-ui__pill--primary" @click="$emit('login')">
+          로그인
+        </button>
+      </template>
     </div>
-
-    <!-- 모바일 메뉴 -->
-    <Transition name="slide-down">
-      <div v-if="mobileOpen" class="app-header__mobile-menu">
-        <router-link to="/" class="app-header__mobile-link" @click="mobileOpen = false">
-          홈
-        </router-link>
-        <router-link
-          v-if="isLoggedIn"
-          to="/subscriptions"
-          class="app-header__mobile-link"
-          @click="mobileOpen = false"
-        >
-          구독 목록
-          <span v-if="newPostCount > 0" class="app-header__badge">{{ newPostCount }}</span>
-        </router-link>
-        <router-link
-          v-if="isLoggedIn"
-          to="/profile"
-          class="app-header__mobile-link"
-          @click="mobileOpen = false"
-        >
-          프로필
-        </router-link>
-        <div class="app-header__mobile-actions">
-          <template v-if="isLoggedIn">
-            <button
-              class="app-header__btn app-header__btn--subscribe"
-              @click="$emit('subscribe'); mobileOpen = false"
-            >
-              + 구독
-            </button>
-            <button
-              class="app-header__btn app-header__btn--logout"
-              @click="handleLogout(); mobileOpen = false"
-            >
-              로그아웃
-            </button>
-          </template>
-          <template v-else>
-            <button
-              class="app-header__btn app-header__btn--login"
-              @click="$emit('login'); mobileOpen = false"
-            >
-              로그인
-            </button>
-          </template>
-        </div>
-      </div>
-    </Transition>
-  </header>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-
 defineProps<{
   isLoggedIn: boolean;
   newPostCount: number;
 }>();
 
-const emit = defineEmits<{
+defineEmits<{
   (e: 'login'): void;
   (e: 'subscribe'): void;
   (e: 'logout'): void;
 }>();
-
-const mobileOpen = ref(false);
-const isHidden = ref(false);
-let lastScrollY = 0;
-
-const handleLogout = () => {
-  emit('logout');
-};
-
-const handleScroll = () => {
-  const currentY = window.scrollY;
-  isHidden.value = currentY > 60 && currentY > lastScrollY;
-  lastScrollY = currentY;
-};
-
-onMounted(() => window.addEventListener('scroll', handleScroll, { passive: true }));
-onUnmounted(() => window.removeEventListener('scroll', handleScroll));
 </script>
 
 <style lang="scss" scoped>
-.app-header {
+.floating-ui {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 900;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  transition: transform 0.3s ease;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  pointer-events: none;
 
-  &--hidden {
-    transform: translateY(-100%);
-  }
-
-  &__inner {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 24px;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    gap: 32px;
+  // 자식만 클릭 가능 (캔버스 이벤트 통과)
+  > * {
+    pointer-events: auto;
   }
 
   &__logo {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     text-decoration: none;
-    flex-shrink: 0;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+
+    &:hover {
+      opacity: 1;
+    }
   }
 
   &__logo-icon {
-    font-size: 22px;
+    font-size: 20px;
     color: #007bff;
   }
 
   &__logo-text {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 800;
-    color: #222;
+    color: #333;
     letter-spacing: -0.5px;
-  }
-
-  &__nav {
-    display: flex;
-    gap: 4px;
-    flex: 1;
-
-    @media (max-width: 767px) {
-      display: none;
-    }
-  }
-
-  &__link {
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #666;
-    text-decoration: none;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-
-    &:hover {
-      color: #222;
-      background: rgba(0, 0, 0, 0.04);
-    }
-
-    &--active {
-      color: #007bff;
-      background: rgba(0, 123, 255, 0.08);
-      font-weight: 600;
-    }
-  }
-
-  &__badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    border-radius: 9px;
-    background: #ef4444;
-    color: #fff;
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 1;
   }
 
   &__actions {
     display: flex;
-    gap: 8px;
-    flex-shrink: 0;
-
-    @media (max-width: 767px) {
-      display: none;
-    }
+    align-items: center;
+    gap: 6px;
   }
 
-  &__btn {
-    padding: 7px 16px;
+  &__pill {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
     border: none;
-    border-radius: 10px;
-    font-size: 13px;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(8px);
+    color: #555;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    text-decoration: none;
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08);
 
-    &--login,
-    &--subscribe {
+    &:hover {
+      background: rgba(255, 255, 255, 0.95);
+      color: #222;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+      transform: translateY(-1px);
+    }
+
+    &--primary {
       background: #007bff;
       color: #fff;
+      font-size: 18px;
+      font-weight: 300;
 
       &:hover {
-        background: #0056b3;
-        transform: translateY(-1px);
-      }
-    }
-
-    &--logout {
-      background: #f5f5f5;
-      color: #666;
-
-      &:hover {
-        background: #eee;
-        color: #333;
+        background: #0062d6;
+        color: #fff;
       }
     }
   }
 
-  &__hamburger {
-    display: none;
-    background: none;
-    border: none;
-    cursor: pointer;
-    width: 32px;
-    height: 32px;
-    position: relative;
-    flex-shrink: 0;
-
-    @media (max-width: 767px) {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    span {
-      display: block;
-      width: 20px;
-      height: 2px;
-      background: #333;
-      border-radius: 1px;
-      transition: all 0.3s;
-      position: relative;
-
-      &::before,
-      &::after {
-        content: '';
-        position: absolute;
-        width: 20px;
-        height: 2px;
-        background: #333;
-        border-radius: 1px;
-        transition: all 0.3s;
-      }
-
-      &::before {
-        top: -6px;
-      }
-
-      &::after {
-        top: 6px;
-      }
-
-      &.open {
-        background: transparent;
-
-        &::before {
-          top: 0;
-          transform: rotate(45deg);
-        }
-
-        &::after {
-          top: 0;
-          transform: rotate(-45deg);
-        }
-      }
-    }
-  }
-
-  &__mobile-menu {
-    display: none;
-    flex-direction: column;
-    padding: 8px 24px 16px;
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
-
-    @media (max-width: 767px) {
-      display: flex;
-    }
-  }
-
-  &__mobile-link {
-    padding: 12px 0;
-    font-size: 15px;
-    font-weight: 500;
-    color: #444;
-    text-decoration: none;
-    border-bottom: 1px solid #f5f5f5;
+  &__badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 8px;
-
-    &:last-of-type {
-      border-bottom: none;
-    }
-  }
-
-  &__mobile-actions {
-    display: flex;
-    gap: 8px;
-    padding-top: 12px;
+    justify-content: center;
+    line-height: 1;
+    border: 2px solid #fff;
   }
 }
 
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: all 0.25s ease;
-}
-
-.slide-down-enter-from,
-.slide-down-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
+// 모바일 미세 조정
+@media (max-width: 767px) {
+  .floating-ui {
+    padding: 12px 16px;
+  }
 }
 </style>

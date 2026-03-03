@@ -28,7 +28,7 @@ public class RestControllerExceptionAdvice {
         ApiErrorResponse<T> errorResponse = ApiErrorResponse.error(
                 (HttpStatus) e.getStatusCode(),
                 // 첫 번째 에러의 메시지 꺼내기..
-                e.getFieldErrors().getFirst().getDefaultMessage()
+                e.getFieldErrors().get(0).getDefaultMessage()
         );
 
         for (FieldError fieldError : e.getFieldErrors()) {
@@ -44,7 +44,7 @@ public class RestControllerExceptionAdvice {
         ApiErrorResponse<T> errorResponse = ApiErrorResponse.error(
                 // 첫 번째 에러의 메시지 꺼내기..
                 HttpStatus.BAD_REQUEST,
-                e.getConstraintViolations().stream().toList().getFirst().getMessage()
+                e.getConstraintViolations().stream().toList().get(0).getMessage()
         );
 
         return ResponseEntity.badRequest().body(errorResponse);

@@ -20,11 +20,11 @@ public class SubscriptionQueryController implements SubscriptionQueryApi {
     @Override
     public ResponseEntity<List<SubscriptionResponse>> subscriptionsBlogsCloseGet() {
         Authentication authentication = SecurityContextHolder.getContextHolderStrategy().getContext().getAuthentication();
-        if (!authentication.isAuthenticated()) {
+        // AnonymousAuthenticationToken도 isAuthenticated()가 true를 반환하므로 principal 타입으로 판별
+        if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
             List<SubscriptionResponse> closeSubscriptionsOfAll = subscriptionQueryUsecase.getCloseSubscriptionsOfAll();
             return ResponseEntity.ok(closeSubscriptionsOfAll);
         }
-        User user = (User) authentication.getPrincipal();
         List<SubscriptionResponse> closeSubscriptions = subscriptionQueryUsecase.getCloseSubscriptions(user.getUsername());
         return ResponseEntity.ok(closeSubscriptions);
     }

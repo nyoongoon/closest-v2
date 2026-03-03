@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -26,6 +28,10 @@ import java.util.Optional;
 @Slf4j
 @Component
 public class RssFeedClient implements FeedClient {
+
+    private static final String USER_AGENT = "Closest/1.0 (RSS Reader; +https://github.com/nyoongoon/closest-v2)";
+    private static final int CONNECT_TIMEOUT_MS = 10_000;
+    private static final int READ_TIMEOUT_MS = 15_000;
 
     @Override
     public Feed getFeed(URL rssUrl) {
@@ -59,7 +65,15 @@ public class RssFeedClient implements FeedClient {
     private SyndFeed getSyndFeed(URL rssUrl) {
         log.info("getSyndFeed() - rssUrl : {}", rssUrl);
         try {
-            XmlReader reader = new XmlReader(rssUrl);
+            HttpURLConnection conn = (HttpURLConnection) rssUrl.openConnection();
+            conn.setRequestProperty("User-Agent", USER_AGENT);
+            conn.setRequestProperty("Accept", "application/rss+xml, application/xml, text/xml, */*");
+            conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
+            conn.setReadTimeout(READ_TIMEOUT_MS);
+            conn.setInstanceFollowRedirects(true);
+
+            InputStream inputStream = conn.getInputStream();
+            XmlReader reader = new XmlReader(inputStream, conn.getContentType());
             return new SyndFeedInput().build(reader);
         } catch (FeedException | IOException e) {
             throw new IllegalStateException(e);

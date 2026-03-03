@@ -1,4 +1,5 @@
 <template>
+  <div class="main-page">
   <div class="main-canvas" ref="canvasRef" @click="handleCanvasClick">
     <svg class="main-canvas__svg">
       <!-- 노드 연결선 (그라디언트) -->
@@ -28,7 +29,9 @@
         height: currentCenterNodeSize + 'px',
         top: (centerNode.y - currentCenterNodeSize / 2) + 'px',
         left: (centerNode.x - currentCenterNodeSize / 2) + 'px',
-        backgroundImage: 'url(https://api.dicebear.com/7.x/initials/svg?seed=Me&backgroundColor=007bff)'
+        backgroundImage: isLoggedIn
+          ? 'url(https://api.dicebear.com/7.x/initials/svg?seed=Me&backgroundColor=007bff)'
+          : 'url(https://api.dicebear.com/7.x/icons/svg?seed=guest&icon=person&backgroundColor=94a3b8)'
       }"
     >
       <div class="center-node__pulse"></div>
@@ -49,6 +52,8 @@
       <span v-if="node.newPostsCnt && node.newPostsCnt > 0" class="sub-node__badge">
         {{ node.newPostsCnt }}
       </span>
+      <!-- 블로그명 라벨 -->
+      <span class="sub-node__label">{{ truncName(node.nickName) }}</span>
     </div>
 
     <!-- 호버 시 닉네임 툴팁 -->
@@ -189,6 +194,59 @@
       <p class="main-canvas__empty-title">아직 구독 중인 블로그가 없어요</p>
       <p class="main-canvas__empty-desc">상단의 '+ 구독' 버튼으로 블로그를 추가해보세요</p>
     </div>
+
+    <!-- 페이지 네비게이션 -->
+    <div v-if="totalPages > 1" class="page-nav" @click.stop>
+      <button class="page-nav__btn" @click="handlePrevPage" aria-label="이전">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="page-nav__indicator">{{ nodePage + 1 }} / {{ totalPages }}</span>
+      <button class="page-nav__btn page-nav__btn--primary" @click="handleNextPage" aria-label="다음">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
+    <!-- 스크롤 유도 -->
+    <div v-if="recentPosts.length > 0" class="main-canvas__scroll-hint">
+      <span>최신 글 보기</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- 최신 글 피드 -->
+  <section v-if="recentPosts.length > 0" class="recent-feed">
+    <div class="recent-feed__inner">
+      <h2 class="recent-feed__title">최신 글</h2>
+      <div class="recent-feed__list">
+        <a
+          v-for="(post, i) in recentPosts"
+          :key="i"
+          :href="post.postUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="post-card"
+        >
+          <img
+            class="post-card__favicon"
+            :src="getPostFavicon(post)"
+            :alt="post.blogTitle"
+            loading="lazy"
+          />
+          <div class="post-card__body">
+            <span class="post-card__title">{{ post.postTitle }}</span>
+            <div class="post-card__meta">
+              <span class="post-card__blog">{{ post.blogTitle }}</span>
+              <span class="post-card__dot">&middot;</span>
+              <span class="post-card__time">{{ formatRelativeTime(post.publishedDateTime) }}</span>
+            </div>
+          </div>
+          <span class="post-card__arrow">↗</span>
+        </a>
+      </div>
+    </div>
+  </section>
   </div>
 </template>
 
@@ -198,9 +256,9 @@ import { useAuthStore } from '@/stores';
 import { useSubscriptionStore } from '@/stores/subscription';
 import { useToast } from '@/composables/useToast';
 import { getAccessTokenFromCookie, deleteCookieFromBrowser } from '@/utils/cookie';
-import { authApi } from '@/services/api';
+import { authApi, postApi } from '@/services/api';
 import { getFaviconUrl } from '@/utils/favicon';
-import type { BlogInfo, BlogNode } from '@/types';
+import type { BlogInfo, BlogNode, RecentPost } from '@/types';
 
 export default defineComponent({
   name: 'MainView',
@@ -223,15 +281,18 @@ export default defineComponent({
     const currentCenterNodeSize = computed(() => isMobile.value ? 48 : 64);
     const currentNodeSize = computed(() => isMobile.value ? 36 : 44);
 
-    const centerNode = reactive({ x: window.innerWidth / 2, y: (window.innerHeight / 2) + 28 });
+    const centerNode = reactive({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
     const minDistance = computed(() => isMobile.value ? 120 : 180);
     const maxDistance = computed(() => isMobile.value ? 200 : 280);
-    const visibleNodeCount = ref(20);
+    const PAGE_SIZE = 8;
     const range = 80;
     const initialSpeed = 0.6;
 
     const hoveredIndex = ref<number | null>(null);
     const isLoadingNodes = ref(true);
+    const allBlogs = ref<any[]>([]);
+    const nodePage = ref(0);
+    const totalPages = computed(() => Math.max(1, Math.ceil(allBlogs.value.length / PAGE_SIZE)));
 
     const getRandomPosition = () => {
       const angle = Math.random() * Math.PI * 2;
@@ -261,14 +322,32 @@ export default defineComponent({
       isLoadingNodes.value = true;
       try {
         await subscriptionStore.fetchCloseBlogs();
-        const blogs = subscriptionStore.closeBlogs;
-        nodes.splice(0, nodes.length, ...blogs.map(createNodeFromBlog));
-        visibleNodes.value = nodes.slice(0, visibleNodeCount.value);
+        allBlogs.value = subscriptionStore.closeBlogs;
+        applyPage();
       } catch (error) {
         console.error('Error fetching blog subscriptions:', error);
       } finally {
         isLoadingNodes.value = false;
       }
+    };
+
+    const applyPage = () => {
+      const start = nodePage.value * PAGE_SIZE;
+      const pageBlogs = allBlogs.value.slice(start, start + PAGE_SIZE);
+      nodes.splice(0, nodes.length, ...pageBlogs.map(createNodeFromBlog));
+      visibleNodes.value = [...nodes];
+      // 팝오버 닫기
+      selectedIndex.value = null;
+    };
+
+    const handleNextPage = () => {
+      nodePage.value = (nodePage.value + 1) % totalPages.value;
+      applyPage();
+    };
+
+    const handlePrevPage = () => {
+      nodePage.value = (nodePage.value - 1 + totalPages.value) % totalPages.value;
+      applyPage();
     };
 
     const createNodeFromBlog = (blog: any): BlogNode => {
@@ -336,7 +415,7 @@ export default defineComponent({
         }
       });
 
-      visibleNodes.value = nodes.slice(0, visibleNodeCount.value);
+      visibleNodes.value = [...nodes];
       animFrameId = requestAnimationFrame(animate);
     };
 
@@ -459,7 +538,7 @@ export default defineComponent({
     const handleResize = () => {
       isMobile.value = window.innerWidth < 768;
       centerNode.x = window.innerWidth / 2;
-      centerNode.y = (window.innerHeight / 2) + 28;
+      centerNode.y = window.innerHeight / 2;
     };
 
     const handleSigninRequest = async (event: Event) => {
@@ -545,8 +624,46 @@ export default defineComponent({
       }
     };
 
+    const truncName = (name?: string) => {
+      if (!name) return '';
+      return name.length > 6 ? name.slice(0, 6) : name;
+    };
+
+    // 최신 글 피드
+    const recentPosts = ref<RecentPost[]>([]);
+
+    const fetchRecentPosts = async () => {
+      try {
+        recentPosts.value = await postApi.getRecentPosts(30);
+      } catch (e) {
+        console.error('Failed to fetch recent posts:', e);
+      }
+    };
+
+    const getPostFavicon = (post: RecentPost) => {
+      return post.thumbnailUrl || getFaviconUrl(post.blogUrl);
+    };
+
+    const formatRelativeTime = (dateStr: string): string => {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const now = new Date();
+      const diffMs = now.getTime() - d.getTime();
+      const diffMin = Math.floor(diffMs / 60000);
+      if (diffMin < 1) return '방금';
+      if (diffMin < 60) return `${diffMin}분 전`;
+      const diffHours = Math.floor(diffMin / 60);
+      if (diffHours < 24) return `${diffHours}시간 전`;
+      const diffDays = Math.floor(diffHours / 24);
+      if (diffDays < 7) return `${diffDays}일 전`;
+      if (diffDays < 30) return `${Math.floor(diffDays / 7)}주 전`;
+      return d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+    };
+
     onMounted(() => {
       fetchBlogSubscriptions();
+      fetchRecentPosts();
       animFrameId = requestAnimationFrame(animate);
       window.addEventListener('keydown', handleKeydown);
       window.addEventListener('resize', handleResize);
@@ -579,13 +696,20 @@ export default defineComponent({
       showSignupModal,
       isLoggedIn: computed(() => props.isLoggedIn),
       visibleNodes,
-      visibleNodeCount,
+      nodePage,
+      totalPages,
+      handleNextPage,
+      handlePrevPage,
       selectedIndex,
       popoverStyle,
       popoverAvatarUrl,
       popoverDisplayUrl,
       visitSelectedBlog,
       handleCanvasClick,
+      truncName,
+      recentPosts,
+      getPostFavicon,
+      formatRelativeTime,
       loginForm,
       signupForm,
       subscribeForm,
@@ -601,6 +725,10 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
+.main-page {
+  width: 100%;
+}
+
 .main-canvas {
   position: relative;
   width: 100vw;
@@ -642,6 +770,189 @@ export default defineComponent({
     font-size: 14px;
     color: #999;
     margin: 0;
+  }
+
+  &__scroll-hint {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: #bbb;
+    font-size: 12px;
+    font-weight: 500;
+    animation: bounce-hint 2s ease-in-out infinite;
+    z-index: 5;
+    pointer-events: none;
+  }
+}
+
+// 페이지 네비게이션
+.page-nav {
+  position: absolute;
+  bottom: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border-radius: 20px;
+  padding: 4px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+
+  &__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    &--primary {
+      background: #007bff;
+      color: #fff;
+
+      &:hover {
+        background: #0062d6;
+        color: #fff;
+      }
+    }
+  }
+
+  &__indicator {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    padding: 0 8px;
+    min-width: 40px;
+    text-align: center;
+    user-select: none;
+  }
+}
+
+@keyframes bounce-hint {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(6px); }
+}
+
+// ── 최신 글 피드 ──
+.recent-feed {
+  background: #fff;
+  border-top: 1px solid #f0f0f0;
+  padding: 48px 24px 64px;
+
+  &__inner {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  &__title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #222;
+    margin: 0 0 24px;
+    letter-spacing: -0.3px;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+.post-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+
+  &:hover {
+    background: #f8f9fb;
+
+    .post-card__arrow {
+      opacity: 1;
+      color: #007bff;
+    }
+  }
+
+  &__favicon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: #f5f5f5;
+    border: 1px solid #eee;
+    flex-shrink: 0;
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  &__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #222;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #999;
+  }
+
+  &__blog {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px;
+  }
+
+  &__dot {
+    flex-shrink: 0;
+  }
+
+  &__time {
+    flex-shrink: 0;
+  }
+
+  &__arrow {
+    flex-shrink: 0;
+    font-size: 14px;
+    color: #ccc;
+    opacity: 0;
+    transition: all 0.15s;
   }
 }
 
@@ -703,6 +1014,20 @@ export default defineComponent({
     border: 2px solid #fff;
     box-shadow: 0 1px 4px rgba(239, 68, 68, 0.3);
     z-index: 1;
+  }
+
+  &__label {
+    position: absolute;
+    bottom: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 600;
+    color: #888;
+    white-space: nowrap;
+    pointer-events: none;
+    letter-spacing: -0.3px;
+    text-shadow: 0 0 3px #fff, 0 0 3px #fff;
   }
 }
 

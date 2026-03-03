@@ -18,11 +18,24 @@ export interface Post {
   publishedAt: string;
 }
 
+export interface RecentPost {
+  postTitle: string;
+  postUrl: string;
+  publishedDateTime: string;
+  blogTitle: string;
+  blogUrl: string;
+  author?: string;
+  thumbnailUrl?: string;
+}
+
 export interface BlogInfo {
   subscriptionId?: number;
   blogUrl: string;
   nickName: string;
   thumbnailUrl?: string;
+  newPostsCnt?: number;
+  visitCnt?: number;
+  publishedDateTime?: string | null;
 }
 
 // ─── Auth Models ────────────────────────────────────────────────
@@ -71,4 +84,5 @@ export interface BlogNode {
   blogUrl?: string;
   newPostsCnt?: number;
   visitCnt?: number;
+  publishedDateTime?: string | null;
 }

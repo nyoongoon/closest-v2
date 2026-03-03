@@ -75,6 +75,6 @@ public class BlogAuthService implements BlogAuthUsecase {
 
     private FeedItem getRecentFeedItem(List<FeedItem> feedItems) {
         feedItems.sort((x, y) -> y.getPublishedDateTime().compareTo(x.getPublishedDateTime()));
-        return feedItems.getFirst();
+        return feedItems.get(0);
     }
 }
