@@ -224,16 +224,31 @@
   </div>
 
   <!-- 최신 글 피드 -->
-  <section v-if="recentPosts.length > 0" class="recent-feed" ref="feedSectionRef">
-    <!-- 상단 중앙: 이전 페이지 -->
-    <button
-      v-if="postTotalPages > 1 && postPage > 0"
-      class="feed-nav-btn feed-nav-btn--top"
-      @click="handlePostPrevPage"
-    >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-      <span>{{ postPage }} / {{ postTotalPages }}</span>
-    </button>
+  <section
+    v-if="recentPosts.length > 0"
+    class="recent-feed"
+    ref="feedSectionRef"
+    @touchstart="onFeedTouchStart"
+    @touchend="onFeedTouchEnd"
+  >
+    <!-- 상단 중앙: 페이지 네비게이션 -->
+    <div v-if="postTotalPages > 1" class="feed-paging">
+      <button
+        class="feed-paging__btn"
+        :disabled="postPage === 0"
+        @click="handlePostPrevPage"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="feed-paging__info">{{ postPage + 1 }} / {{ postTotalPages }}</span>
+      <button
+        class="feed-paging__btn"
+        :disabled="postPage >= postTotalPages - 1"
+        @click="handlePostNextPage"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
 
     <div class="recent-feed__inner">
       <h2 class="recent-feed__title">최신 글</h2>
@@ -265,21 +280,18 @@
       </div>
     </div>
 
-    <!-- 하단 중앙: 다음 페이지 -->
-    <button
-      v-if="postTotalPages > 1 && postPage < postTotalPages - 1"
-      class="feed-nav-btn feed-nav-btn--bottom"
-      @click="handlePostNextPage"
-    >
-      <span>{{ postPage + 2 }} / {{ postTotalPages }}</span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
+    <!-- 좌로 스와이프 힌트 -->
+    <div class="feed-swipe-hint">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      <span>밀어서 탐색</span>
+    </div>
   </section>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent, onMounted, onUnmounted, reactive, ref, computed, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores';
 import { useSubscriptionStore } from '@/stores/subscription';
 import { useToast } from '@/composables/useToast';
@@ -298,6 +310,7 @@ export default defineComponent({
   },
   emits: ['update:isLoggedIn', 'update:showLoginModal', 'update:showSubscribeModal'],
   setup(props, { emit }) {
+    const router = useRouter();
     const authStore = useAuthStore();
     const subscriptionStore = useSubscriptionStore();
     const { showToast } = useToast();
@@ -672,6 +685,24 @@ export default defineComponent({
       return recentPosts.value.slice(start, start + POST_PAGE_SIZE);
     });
 
+    // 피드 섹션 좌 스와이프 → 탐색
+    let feedTouchStartX = 0;
+    let feedTouchStartY = 0;
+
+    const onFeedTouchStart = (e: TouchEvent) => {
+      feedTouchStartX = e.touches[0].clientX;
+      feedTouchStartY = e.touches[0].clientY;
+    };
+
+    const onFeedTouchEnd = (e: TouchEvent) => {
+      const dx = e.changedTouches[0].clientX - feedTouchStartX;
+      const dy = e.changedTouches[0].clientY - feedTouchStartY;
+      // 좌로 충분히 밀었고, 수평 이동이 수직보다 클 때
+      if (dx < -80 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        router.push('/explore');
+      }
+    };
+
     const scrollToFeedTop = () => {
       if (feedSectionRef.value) {
         feedSectionRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -778,6 +809,8 @@ export default defineComponent({
       handleCanvasClick,
       truncName,
       feedSectionRef,
+      onFeedTouchStart,
+      onFeedTouchEnd,
       recentPosts,
       pagedPosts,
       postPage,
@@ -1008,45 +1041,79 @@ export default defineComponent({
   }
 }
 
-// ── 피드 네비게이션 버튼 (상단/하단 중앙) ──
-.feed-nav-btn {
+// ── 피드 페이징 (상단 중앙) ──
+.feed-paging {
   position: absolute;
+  top: 16px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 20px;
-  border-radius: 20px;
-  border: 1px solid #e0e0e0;
+  gap: 4px;
+  z-index: 10;
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(8px);
-  font-size: 13px;
-  font-weight: 600;
-  color: #666;
-  cursor: pointer;
-  transition: all 0.2s;
-  z-index: 10;
+  border-radius: 20px;
+  padding: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e8e8e8;
 
-  &:hover {
-    background: #f0f4ff;
-    border-color: #007bff;
-    color: #007bff;
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+  &__btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover:not(:disabled) {
+      background: #f0f4ff;
+      color: #007bff;
+    }
+
+    &:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
   }
 
-  &:active {
-    transform: translateX(-50%) scale(0.96);
+  &__info {
+    font-size: 13px;
+    font-weight: 600;
+    color: #888;
+    min-width: 48px;
+    text-align: center;
   }
+}
 
-  &--top {
-    top: 16px;
-  }
+// ── 스와이프 힌트 (우하단) ──
+.feed-swipe-hint {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #ccc;
+  font-size: 11px;
+  font-weight: 500;
+  animation: swipe-hint 2.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 5;
 
-  &--bottom {
-    bottom: 16px;
+  @media (min-width: 769px) {
+    display: none;
   }
+}
+
+@keyframes swipe-hint {
+  0%, 100% { transform: translateX(0); opacity: 0.5; }
+  50% { transform: translateX(-6px); opacity: 1; }
 }
 
 .post-card {
