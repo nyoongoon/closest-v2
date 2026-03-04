@@ -87,9 +87,9 @@ func (r *BlogRepo) FindAll(page, size int) ([]*blog.Blog, bool, error) {
 
 func (r *BlogRepo) SavePost(p *blog.Post) (int64, error) {
 	res, err := r.db.Exec(
-		`INSERT INTO post (blog_id, post_url, post_title, published_date_time, post_visit_count)
-		 VALUES (?, ?, ?, ?, ?)`,
-		p.BlogID, p.PostURL, p.PostTitle, p.PublishedDateTime, p.PostVisitCount,
+		`INSERT INTO post (blog_id, post_url, post_title, published_date_time, post_visit_count, thumbnail_url)
+		 VALUES (?, ?, ?, ?, ?, ?)`,
+		p.BlogID, p.PostURL, p.PostTitle, p.PublishedDateTime, p.PostVisitCount, p.ThumbnailURL,
 	)
 	if err != nil {
 		return 0, err
@@ -99,9 +99,9 @@ func (r *BlogRepo) SavePost(p *blog.Post) (int64, error) {
 
 func (r *BlogRepo) UpdatePost(p *blog.Post) error {
 	_, err := r.db.Exec(
-		`UPDATE post SET post_title=?, published_date_time=?, post_visit_count=?
+		`UPDATE post SET post_title=?, published_date_time=?, post_visit_count=?, thumbnail_url=?
 		 WHERE post_id=?`,
-		p.PostTitle, p.PublishedDateTime, p.PostVisitCount, p.ID,
+		p.PostTitle, p.PublishedDateTime, p.PostVisitCount, p.ThumbnailURL, p.ID,
 	)
 	return err
 }

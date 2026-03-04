@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app">
+    <!-- 헤더 -->
+    <header class="header">
+      <div class="header__logo">
+        <span class="header__icon">◉</span>
+        <span class="header__title">Closest</span>
+      </div>
+      <div id="userInfo" class="header__user" style="display:none">
+        <span id="userEmail" class="header__email"></span>
+        <button id="logoutBtn" class="btn-link">로그아웃</button>
+      </div>
+    </header>
+
+    <!-- 로그인 폼 -->
+    <section id="loginSection" class="section">
+      <p class="section__desc">Closest 계정으로 로그인하세요</p>
+      <form id="loginForm">
+        <input type="email" id="email" placeholder="이메일" required autocomplete="email">
+        <input type="password" id="password" placeholder="비밀번호" required autocomplete="current-password">
+        <button type="submit" class="btn btn--primary" id="loginBtn">로그인</button>
+      </form>
+      <div class="section__divider">
+        <span>또는</span>
+      </div>
+      <button id="oauthBtn" class="btn btn--oauth">
+        <span class="btn__icon">🌐</span>
+        Closest 웹에서 로그인
+      </button>
+      <p class="section__hint">
+        계정이 없으신가요?
+        <a id="openSignup" href="#" class="link">회원가입</a>
+      </p>
+    </section>
+
+    <!-- RSS 감지 영역 -->
+    <section id="feedSection" class="section" style="display:none">
+      <div id="noFeeds" class="empty" style="display:none">
+        <p>이 페이지에서 RSS 피드를 찾지 못했어요</p>
+      </div>
+      <div id="feedList" class="feed-list"></div>
+      <div id="manualSection" class="manual">
+        <p class="manual__label">직접 입력</p>
+        <div class="manual__row">
+          <input type="url" id="manualUrl" placeholder="RSS URL 입력" class="manual__input">
+          <button id="manualBtn" class="btn btn--small btn--primary">구독</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 설정 -->
+    <footer class="footer">
+      <details class="settings">
+        <summary class="settings__summary">서버 설정</summary>
+        <div class="settings__body">
+          <input type="url" id="serverUrl" placeholder="http://localhost:8081" class="settings__input">
+          <button id="saveServerUrl" class="btn btn--small">저장</button>
+        </div>
+      </details>
+    </footer>
+
+    <!-- 토스트 -->
+    <div id="toast" class="toast" style="display:none"></div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -16,6 +16,7 @@ type FeedItem struct {
 	PostURL           string
 	PostTitle         string
 	PublishedDateTime time.Time
+	ThumbnailURL      string
 }
 
 func (f *Feed) ExtractRecentPublishedDateTime() time.Time {

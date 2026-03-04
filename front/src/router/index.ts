@@ -22,6 +22,11 @@ const router = createRouter({
       component: () => import('@/views/ExploreView.vue'),
     },
     {
+      path: '/discover',
+      name: 'discover',
+      component: () => import('@/views/DiscoverView.vue'),
+    },
+    {
       path: '/profile',
       name: 'profile',
       component: () => import('@/views/ProfileView.vue'),

@@ -52,22 +52,6 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
 
-        <!-- 우측 세로 인디케이터 -->
-        <div class="shorts-card__indicators">
-          <div
-            v-for="(_, i) in visibleIndicators"
-            :key="i + indicatorOffset"
-            class="shorts-card__dot"
-            :class="{ 'shorts-card__dot--active': i + indicatorOffset === currentIndex }"
-          >
-            <div
-              v-if="i + indicatorOffset === currentIndex"
-              class="shorts-card__dot-fill"
-              :style="{ height: timerProgress + '%' }"
-            ></div>
-          </div>
-        </div>
-
         <!-- 타이머 프로그레스 바 (하단) -->
         <div class="shorts-card__timer-bar">
           <div class="shorts-card__timer-fill" :style="{ width: timerProgress + '%' }"></div>
@@ -87,12 +71,12 @@
 <script lang="ts">
 import { defineComponent, ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { postApi } from '@/services/api';
+import { useExploreStore } from '@/stores/explore';
 import { getFaviconUrl } from '@/utils/favicon';
 import type { RecentPost } from '@/types';
 
 const TIMER_DURATION = 5000;
 const TIMER_INTERVAL = 50;
-const MAX_DOTS = 8;
 
 export default defineComponent({
   name: 'ExploreView',
@@ -110,24 +94,19 @@ export default defineComponent({
 
     const currentPost = computed(() => posts.value[currentIndex.value] || null);
 
-    const indicatorOffset = computed(() => {
-      const total = posts.value.length;
-      if (total <= MAX_DOTS) return 0;
-      const half = Math.floor(MAX_DOTS / 2);
-      let offset = currentIndex.value - half;
-      offset = Math.max(0, Math.min(offset, total - MAX_DOTS));
-      return offset;
-    });
-
-    const visibleIndicators = computed(() => {
-      const total = posts.value.length;
-      return Array.from({ length: Math.min(total, MAX_DOTS) });
-    });
-
     const bgStyle = computed(() => {
       const p = currentPost.value;
       if (!p) return {};
-      // Generate a gradient based on blog name hash
+      // Use post thumbnail as background if available
+      if (p.thumbnailUrl) {
+        return {
+          backgroundImage: `url(${p.thumbnailUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        };
+      }
+      // Fallback: gradient based on blog name hash
       const hash = hashCode(p.blogTitle || '');
       const h1 = Math.abs(hash) % 360;
       const h2 = (h1 + 40) % 360;
@@ -251,8 +230,20 @@ export default defineComponent({
 
     onMounted(async () => {
       window.addEventListener('keydown', onKeydown);
+
+      const exploreStore = useExploreStore();
+
+      // 스토어에 캐시된 데이터가 있으면 즉시 사용
+      if (exploreStore.loaded && exploreStore.posts.length > 0) {
+        posts.value = [...exploreStore.posts];
+        loading.value = false;
+        if (posts.value.length > 0) startTimer();
+        return;
+      }
+
+      // 캐시 없으면 직접 fetch
       try {
-        posts.value = await postApi.getRecentPosts(100);
+        posts.value = await postApi.getMixedFeed(100);
       } catch (e) {
         console.error('Failed to fetch posts:', e);
       } finally {
@@ -277,8 +268,6 @@ export default defineComponent({
       timerProgress,
       slideDirection,
       bgStyle,
-      visibleIndicators,
-      indicatorOffset,
       getFavicon,
       formatTime,
       next,
@@ -516,39 +505,6 @@ export default defineComponent({
       height: 36px;
       opacity: 0.4;
     }
-  }
-
-  // 우측 세로 인디케이터
-  &__indicators {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    z-index: 10;
-  }
-
-  &__dot {
-    width: 3px;
-    height: 24px;
-    border-radius: 2px;
-    background: rgba(255, 255, 255, 0.25);
-    overflow: hidden;
-    transition: height 0.2s;
-
-    &--active {
-      height: 32px;
-      background: rgba(255, 255, 255, 0.3);
-    }
-  }
-
-  &__dot-fill {
-    width: 100%;
-    background: white;
-    border-radius: 2px;
-    transition: height 0.05s linear;
   }
 
   // 하단 프로그레스 바

@@ -101,4 +101,59 @@ export const postApi = {
   getRecentPosts(limit = 30): Promise<RecentPost[]> {
     return fetchWrapper.get(`/api/posts/recent?limit=${limit}`, null, { silent: true });
   },
+
+  getMixedFeed(limit = 100): Promise<RecentPost[]> {
+    return fetchWrapper.get(`/api/posts/feed?limit=${limit}`, null, { silent: true });
+  },
+};
+
+// ─── Discover API ────────────────────────────────────────────────
+
+export interface DiscoverCategory {
+  id: number;
+  name: string;
+  slug: string;
+  icon: string;
+  sortOrder: number;
+  blogCount: number;
+}
+
+export interface DiscoverBlog {
+  blogId: number;
+  rssUrl: string;
+  blogUrl: string;
+  blogTitle: string;
+  author?: string;
+  thumbnailUrl?: string;
+  platform: string;
+  score: number;
+  postCount: number;
+  tags: string[];
+  categories: string[];
+}
+
+export interface DiscoverBlogsResponse {
+  blogs: DiscoverBlog[];
+  hasMore: boolean;
+  page: number;
+}
+
+export const discoverApi = {
+  getCategories(): Promise<DiscoverCategory[]> {
+    return fetchWrapper.get('/api/discover/categories', null, { silent: true });
+  },
+
+  getBlogs(params: { category?: string; tag?: string; q?: string; page?: number; size?: number } = {}): Promise<DiscoverBlogsResponse> {
+    const qs = new URLSearchParams();
+    if (params.category) qs.set('category', params.category);
+    if (params.tag) qs.set('tag', params.tag);
+    if (params.q) qs.set('q', params.q);
+    if (params.page !== undefined) qs.set('page', String(params.page));
+    if (params.size) qs.set('size', String(params.size));
+    return fetchWrapper.get(`/api/discover/blogs?${qs.toString()}`, null, { silent: true });
+  },
+
+  getTags(limit = 30): Promise<{ id: number; name: string; blogCount: number }[]> {
+    return fetchWrapper.get(`/api/discover/tags?limit=${limit}`, null, { silent: true });
+  },
 };

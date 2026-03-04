@@ -33,6 +33,7 @@ func main() {
 	blogRepo := sqlite.NewBlogRepo(db)
 	subRepo := sqlite.NewSubscriptionRepo(db)
 	likesRepo := sqlite.NewLikesRepo(db)
+	discoverRepo := sqlite.NewDiscoverRepo(db)
 
 	// Infrastructure
 	jwtProvider := jwt.NewProvider(cfg.AccessSecretKey, cfg.RefreshSecretKey)
@@ -52,6 +53,7 @@ func main() {
 	myBlogEditSvc := service.NewMyBlogEditService(memberRepo, eventBus)
 	postLikeSvc := service.NewPostLikeService(likesRepo, memberRepo)
 	blogSchedulerSvc := service.NewBlogSchedulerService(blogRepo, feedClient)
+	blogCrawlerSvc := service.NewBlogCrawlerService(blogRepo, discoverRepo, feedClient)
 
 	// Handlers
 	memberAuthH := handler.NewMemberAuthHandler(memberAuthSvc)
@@ -61,9 +63,12 @@ func main() {
 	postH := handler.NewPostHandler(blogRepo)
 	postLikeH := handler.NewPostLikeHandler(postLikeSvc)
 	myBlogH := handler.NewMyBlogHandler(myBlogEditSvc)
+	discoverH := handler.NewDiscoverHandler(discoverRepo)
+	feedMixH := handler.NewFeedMixHandler(blogRepo, discoverRepo)
 
-	// Start RSS scheduler
+	// Start RSS scheduler & crawler
 	blogSchedulerSvc.Start()
+	blogCrawlerSvc.Start()
 
 	// Router
 	r := chi.NewRouter()
@@ -75,6 +80,13 @@ func main() {
 	r.Post("/member/auth/signup", memberAuthH.Signup)
 	r.Post("/member/auth/signin", memberAuthH.Signin)
 	r.Get("/posts/recent", postH.GetRecentPosts)
+	r.Get("/posts/feed", feedMixH.GetMixedFeed)
+
+	// Discovery routes (public)
+	r.Get("/discover/categories", discoverH.GetCategories)
+	r.Get("/discover/blogs", discoverH.GetBlogs)
+	r.Get("/discover/blogs/{id}/tags", discoverH.GetBlogTags)
+	r.Get("/discover/tags", discoverH.GetTags)
 
 	// Close blogs - optional auth
 	r.Group(func(r chi.Router) {

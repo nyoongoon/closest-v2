@@ -56,7 +56,10 @@ func (h *PostHandler) GetRecentPosts(w http.ResponseWriter, r *http.Request) {
 			if b.Author.Valid {
 				item.Author = b.Author.String
 			}
-			if b.ThumbnailURL.Valid {
+			// Prefer post-level thumbnail, fall back to blog-level
+			if p.ThumbnailURL.Valid && p.ThumbnailURL.String != "" {
+				item.ThumbnailURL = p.ThumbnailURL.String
+			} else if b.ThumbnailURL.Valid {
 				item.ThumbnailURL = b.ThumbnailURL.String
 			}
 			results = append(results, item)

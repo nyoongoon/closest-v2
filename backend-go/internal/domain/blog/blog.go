@@ -18,12 +18,13 @@ type Blog struct {
 }
 
 type Post struct {
-	ID                int64  `db:"post_id"`
-	BlogID            int64  `db:"blog_id"`
-	PostURL           string `db:"post_url"`
-	PostTitle         string `db:"post_title"`
-	PublishedDateTime string `db:"published_date_time"`
-	PostVisitCount    int64  `db:"post_visit_count"`
+	ID                int64          `db:"post_id"`
+	BlogID            int64          `db:"blog_id"`
+	PostURL           string         `db:"post_url"`
+	PostTitle         string         `db:"post_title"`
+	PublishedDateTime string         `db:"published_date_time"`
+	PostVisitCount    int64          `db:"post_visit_count"`
+	ThumbnailURL      sql.NullString `db:"thumbnail_url"`
 }
 
 func (b *Blog) GetPublishedTime() time.Time {
