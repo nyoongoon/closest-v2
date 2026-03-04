@@ -9,8 +9,8 @@ export const fetchWrapper = {
 };
 
 function request(method: string) {
-    return (url: string, body: any, options: { credentials?: any } = {}) => {
-        const {credentials} = options;
+    return (url: string, body: any, options: { credentials?: any; silent?: boolean } = {}) => {
+        const {credentials, silent} = options;
         const requestOptions: RequestInit & { headers: Record<string, string> } = {
             method,
             headers: authHeader(url),
@@ -27,8 +27,11 @@ function request(method: string) {
             .then(handleResponse)
             .catch((error: unknown) => {
                 console.error(error);
-                const message = typeof error === 'string' ? error : '요청 중 오류가 발생했습니다.';
-                toastBus.emit('show', { message, type: 'error' });
+                // silent 모드이면 토스트 표시하지 않음 (배경 데이터 로딩 등)
+                if (!silent) {
+                    const message = typeof error === 'string' ? error : '요청 중 오류가 발생했습니다.';
+                    toastBus.emit('show', { message, type: 'error' });
+                }
                 return Promise.reject(error);
             });
     };

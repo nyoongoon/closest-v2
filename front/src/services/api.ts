@@ -36,11 +36,11 @@ export const authApi = {
 
 export const subscriptionApi = {
   getCloseBlogs(): Promise<SubscriptionResponse[]> {
-    return fetchWrapper.get(`${SUBS_BASE}/blogs/close`, null);
+    return fetchWrapper.get(`${SUBS_BASE}/blogs/close`, null, { silent: true });
   },
 
   getBlogs(page = 0, size = 20): Promise<SubscriptionResponse[]> {
-    return fetchWrapper.get(`${SUBS_BASE}/blogs?page=${page}&size=${size}`, null);
+    return fetchWrapper.get(`${SUBS_BASE}/blogs?page=${page}&size=${size}`, null, { silent: true });
   },
 
   subscribe(data: SubscribeRequest) {
@@ -99,6 +99,6 @@ export const postApi = {
   },
 
   getRecentPosts(limit = 30): Promise<RecentPost[]> {
-    return fetchWrapper.get(`/api/posts/recent?limit=${limit}`, null);
+    return fetchWrapper.get(`/api/posts/recent?limit=${limit}`, null, { silent: true });
   },
 };
