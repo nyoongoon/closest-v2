@@ -206,6 +206,14 @@
       </button>
     </div>
 
+    <!-- 탐색 버튼 (우측 중앙) -->
+    <button class="explore-fab" @click="$router.push('/explore')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <span>탐색</span>
+    </button>
+
     <!-- 스크롤 유도 -->
     <div v-if="recentPosts.length > 0" class="main-canvas__scroll-hint">
       <span>최신 글 보기</span>
@@ -845,6 +853,46 @@ export default defineComponent({
     margin: 0;
   }
 
+}
+
+// ── 탐색 FAB 버튼 ──
+.explore-fab {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 24px;
+  border: 1px solid rgba(0, 123, 255, 0.2);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  color: #007bff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 12px rgba(0, 123, 255, 0.1);
+
+  &:hover {
+    background: #007bff;
+    color: white;
+    box-shadow: 0 4px 20px rgba(0, 123, 255, 0.3);
+  }
+
+  @media (max-width: 480px) {
+    right: 12px;
+    padding: 8px 14px;
+    font-size: 12px;
+
+    span { display: none; }
+  }
+}
+
+.main-canvas {
   &__scroll-hint {
     position: absolute;
     bottom: 24px;
