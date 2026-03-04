@@ -44,15 +44,15 @@
           </a>
         </div>
 
-        <!-- 좌우 네비 -->
-        <button class="shorts-card__nav shorts-card__nav--prev" @click="prev" v-if="currentIndex > 0">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        <!-- 상하 네비 -->
+        <button class="shorts-card__nav shorts-card__nav--up" @click="prev" v-if="currentIndex > 0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 15 12 9 18 15"/></svg>
         </button>
-        <button class="shorts-card__nav shorts-card__nav--next" @click="next" v-if="currentIndex < posts.length - 1">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        <button class="shorts-card__nav shorts-card__nav--down" @click="next" v-if="currentIndex < posts.length - 1">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
 
-        <!-- 하단 인디케이터 -->
+        <!-- 우측 세로 인디케이터 -->
         <div class="shorts-card__indicators">
           <div
             v-for="(_, i) in visibleIndicators"
@@ -63,7 +63,7 @@
             <div
               v-if="i + indicatorOffset === currentIndex"
               class="shorts-card__dot-fill"
-              :style="{ width: timerProgress + '%' }"
+              :style="{ height: timerProgress + '%' }"
             ></div>
           </div>
         </div>
@@ -187,18 +187,18 @@ export default defineComponent({
 
     function next() {
       if (currentIndex.value < posts.value.length - 1) {
-        slideDirection.value = 'slide-left';
+        slideDirection.value = 'slide-up';
         currentIndex.value++;
       } else {
         currentIndex.value = 0;
-        slideDirection.value = 'slide-left';
+        slideDirection.value = 'slide-up';
       }
       startTimer();
     }
 
     function prev() {
       if (currentIndex.value > 0) {
-        slideDirection.value = 'slide-right';
+        slideDirection.value = 'slide-down';
         currentIndex.value--;
         startTimer();
       }
@@ -221,15 +221,24 @@ export default defineComponent({
     function onTouchEnd(e: TouchEvent) {
       const dx = e.changedTouches[0].clientX - touchStartX;
       const dy = e.changedTouches[0].clientY - touchStartY;
-      if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) {
-        // tap = pause/resume
-        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
-          togglePause();
-        }
+
+      // 우로 밀면 뒤로가기 (피드로 복귀)
+      if (dx > 80 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        window.history.back();
         return;
       }
-      if (dx < 0) next();
-      else prev();
+
+      // 상하 스와이프로 게시글 전환
+      if (Math.abs(dy) > 50 && Math.abs(dy) > Math.abs(dx)) {
+        if (dy < 0) next();  // 위로 밀면 다음
+        else prev();         // 아래로 밀면 이전
+        return;
+      }
+
+      // 탭 = 일시정지/재개
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+        togglePause();
+      }
     }
 
     // Keyboard
@@ -477,11 +486,11 @@ export default defineComponent({
     &:hover { background: rgba(255, 255, 255, 0.25); }
   }
 
-  // 좌우 네비 버튼
+  // 상하 네비 버튼
   &__nav {
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 10;
     width: 44px;
     height: 44px;
@@ -499,49 +508,47 @@ export default defineComponent({
 
     &:hover { opacity: 1; background: rgba(255, 255, 255, 0.2); }
 
-    &--prev { left: 12px; }
-    &--next { right: 12px; }
+    &--up { top: 16px; }
+    &--down { bottom: 16px; }
 
     @media (max-width: 480px) {
       width: 36px;
       height: 36px;
       opacity: 0.4;
-
-      &--prev { left: 6px; }
-      &--next { right: 6px; }
     }
   }
 
-  // 하단 도트 인디케이터
+  // 우측 세로 인디케이터
   &__indicators {
     position: absolute;
-    bottom: 52px;
-    left: 50%;
-    transform: translateX(-50%);
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
     display: flex;
+    flex-direction: column;
     gap: 4px;
     z-index: 10;
   }
 
   &__dot {
-    width: 24px;
-    height: 3px;
+    width: 3px;
+    height: 24px;
     border-radius: 2px;
     background: rgba(255, 255, 255, 0.25);
     overflow: hidden;
-    transition: width 0.2s;
+    transition: height 0.2s;
 
     &--active {
-      width: 32px;
+      height: 32px;
       background: rgba(255, 255, 255, 0.3);
     }
   }
 
   &__dot-fill {
-    height: 100%;
+    width: 100%;
     background: white;
     border-radius: 2px;
-    transition: width 0.05s linear;
+    transition: height 0.05s linear;
   }
 
   // 하단 프로그레스 바
@@ -563,18 +570,18 @@ export default defineComponent({
   }
 }
 
-// ── 슬라이드 트랜지션 ──
-.slide-left-enter-active,
-.slide-left-leave-active,
-.slide-right-enter-active,
-.slide-right-leave-active {
+// ── 슬라이드 트랜지션 (상하) ──
+.slide-up-enter-active,
+.slide-up-leave-active,
+.slide-down-enter-active,
+.slide-down-leave-active {
   transition: all 0.3s ease;
 }
 
-.slide-left-enter-from { transform: translateX(100%); opacity: 0; }
-.slide-left-leave-to { transform: translateX(-30%); opacity: 0; }
-.slide-right-enter-from { transform: translateX(-100%); opacity: 0; }
-.slide-right-leave-to { transform: translateX(30%); opacity: 0; }
+.slide-up-enter-from { transform: translateY(100%); opacity: 0; }
+.slide-up-leave-to { transform: translateY(-30%); opacity: 0; }
+.slide-down-enter-from { transform: translateY(-100%); opacity: 0; }
+.slide-down-leave-to { transform: translateY(30%); opacity: 0; }
 
 .fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
