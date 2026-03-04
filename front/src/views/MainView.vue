@@ -225,14 +225,14 @@
 
   <!-- 최신 글 피드 -->
   <section v-if="recentPosts.length > 0" class="recent-feed" ref="feedSectionRef">
-    <!-- 상단 중앙: 다음 페이지 버튼 -->
+    <!-- 상단 중앙: 이전 페이지 -->
     <button
-      v-if="postTotalPages > 1 && postPage < postTotalPages - 1"
+      v-if="postTotalPages > 1 && postPage > 0"
       class="feed-nav-btn feed-nav-btn--top"
-      @click="handlePostNextPage"
+      @click="handlePostPrevPage"
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"/></svg>
-      <span>{{ postPage + 2 }} / {{ postTotalPages }}</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      <span>{{ postPage }} / {{ postTotalPages }}</span>
     </button>
 
     <div class="recent-feed__inner">
@@ -265,14 +265,14 @@
       </div>
     </div>
 
-    <!-- 하단 중앙: 이전 페이지 버튼 -->
+    <!-- 하단 중앙: 다음 페이지 -->
     <button
-      v-if="postTotalPages > 1 && postPage > 0"
+      v-if="postTotalPages > 1 && postPage < postTotalPages - 1"
       class="feed-nav-btn feed-nav-btn--bottom"
-      @click="handlePostPrevPage"
+      @click="handlePostNextPage"
     >
-      <span>{{ postPage }} / {{ postTotalPages }}</span>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      <span>{{ postPage + 2 }} / {{ postTotalPages }}</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
   </section>
   </div>
@@ -977,7 +977,8 @@ export default defineComponent({
   position: relative;
   background: #fff;
   border-top: 1px solid #f0f0f0;
-  height: 100vh;
+  min-height: 100vh;
+  min-height: 100dvh;
   scroll-snap-align: start;
   display: flex;
   flex-direction: column;
@@ -1041,23 +1042,11 @@ export default defineComponent({
 
   &--top {
     top: 16px;
-    animation: hint-up 2s ease-in-out infinite;
   }
 
   &--bottom {
     bottom: 16px;
-    animation: hint-down 2s ease-in-out infinite;
   }
-}
-
-@keyframes hint-up {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50% { transform: translateX(-50%) translateY(-4px); }
-}
-
-@keyframes hint-down {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50% { transform: translateX(-50%) translateY(4px); }
 }
 
 .post-card {
