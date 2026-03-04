@@ -216,13 +216,23 @@
   </div>
 
   <!-- 최신 글 피드 -->
-  <section v-if="recentPosts.length > 0" class="recent-feed">
+  <section v-if="recentPosts.length > 0" class="recent-feed" ref="feedSectionRef">
+    <!-- 상단 중앙: 다음 페이지 버튼 -->
+    <button
+      v-if="postTotalPages > 1 && postPage < postTotalPages - 1"
+      class="feed-nav-btn feed-nav-btn--top"
+      @click="handlePostNextPage"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"/></svg>
+      <span>{{ postPage + 2 }} / {{ postTotalPages }}</span>
+    </button>
+
     <div class="recent-feed__inner">
       <h2 class="recent-feed__title">최신 글</h2>
       <div class="recent-feed__list">
         <a
-          v-for="(post, i) in recentPosts"
-          :key="i"
+          v-for="(post, i) in pagedPosts"
+          :key="postPage + '-' + i"
           :href="post.postUrl"
           target="_blank"
           rel="noopener noreferrer"
@@ -246,6 +256,16 @@
         </a>
       </div>
     </div>
+
+    <!-- 하단 중앙: 이전 페이지 버튼 -->
+    <button
+      v-if="postTotalPages > 1 && postPage > 0"
+      class="feed-nav-btn feed-nav-btn--bottom"
+      @click="handlePostPrevPage"
+    >
+      <span>{{ postPage }} / {{ postTotalPages }}</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
   </section>
   </div>
 </template>
@@ -275,6 +295,7 @@ export default defineComponent({
     const { showToast } = useToast();
 
     const canvasRef = ref<HTMLElement | null>(null);
+    const feedSectionRef = ref<HTMLElement | null>(null);
 
     // 반응형
     const isMobile = ref(window.innerWidth < 768);
@@ -633,12 +654,39 @@ export default defineComponent({
       return name.length > 6 ? name.slice(0, 6) : name;
     };
 
-    // 최신 글 피드
+    // 최신 글 피드 + 페이징
     const recentPosts = ref<RecentPost[]>([]);
+    const POST_PAGE_SIZE = 10;
+    const postPage = ref(0);
+    const postTotalPages = computed(() => Math.max(1, Math.ceil(recentPosts.value.length / POST_PAGE_SIZE)));
+    const pagedPosts = computed(() => {
+      const start = postPage.value * POST_PAGE_SIZE;
+      return recentPosts.value.slice(start, start + POST_PAGE_SIZE);
+    });
+
+    const scrollToFeedTop = () => {
+      if (feedSectionRef.value) {
+        feedSectionRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+
+    const handlePostNextPage = () => {
+      if (postPage.value < postTotalPages.value - 1) {
+        postPage.value++;
+        scrollToFeedTop();
+      }
+    };
+
+    const handlePostPrevPage = () => {
+      if (postPage.value > 0) {
+        postPage.value--;
+        scrollToFeedTop();
+      }
+    };
 
     const fetchRecentPosts = async () => {
       try {
-        recentPosts.value = await postApi.getRecentPosts(30);
+        recentPosts.value = await postApi.getRecentPosts(100);
       } catch (e) {
         console.error('Failed to fetch recent posts:', e);
       }
@@ -721,7 +769,13 @@ export default defineComponent({
       visitSelectedBlog,
       handleCanvasClick,
       truncName,
+      feedSectionRef,
       recentPosts,
+      pagedPosts,
+      postPage,
+      postTotalPages,
+      handlePostNextPage,
+      handlePostPrevPage,
       getPostFavicon,
       formatRelativeTime,
       loginForm,
@@ -741,6 +795,10 @@ export default defineComponent({
 <style lang="scss" scoped>
 .main-page {
   width: 100%;
+  height: 100vh;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
 }
 
 .main-canvas {
@@ -749,6 +807,7 @@ export default defineComponent({
   height: 100vh;
   background: linear-gradient(145deg, #fafbff 0%, #f5f7ff 50%, #fafbff 100%);
   overflow: hidden;
+  scroll-snap-align: start;
 
   &__svg {
     position: absolute;
@@ -867,12 +926,21 @@ export default defineComponent({
 
 // ── 최신 글 피드 ──
 .recent-feed {
+  position: relative;
   background: #fff;
   border-top: 1px solid #f0f0f0;
-  padding: 48px 24px 64px;
+  height: 100vh;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 24px;
+  box-sizing: border-box;
 
   &__inner {
     max-width: 680px;
+    width: 100%;
     margin: 0 auto;
   }
 
@@ -880,7 +948,7 @@ export default defineComponent({
     font-size: 20px;
     font-weight: 800;
     color: #222;
-    margin: 0 0 24px;
+    margin: 0 0 20px;
     letter-spacing: -0.3px;
   }
 
@@ -889,6 +957,59 @@ export default defineComponent({
     flex-direction: column;
     gap: 2px;
   }
+}
+
+// ── 피드 네비게이션 버튼 (상단/하단 중앙) ──
+.feed-nav-btn {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border-radius: 20px;
+  border: 1px solid #e0e0e0;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  &:hover {
+    background: #f0f4ff;
+    border-color: #007bff;
+    color: #007bff;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+  }
+
+  &:active {
+    transform: translateX(-50%) scale(0.96);
+  }
+
+  &--top {
+    top: 16px;
+    animation: hint-up 2s ease-in-out infinite;
+  }
+
+  &--bottom {
+    bottom: 16px;
+    animation: hint-down 2s ease-in-out infinite;
+  }
+}
+
+@keyframes hint-up {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-4px); }
+}
+
+@keyframes hint-down {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(4px); }
 }
 
 .post-card {
