@@ -318,15 +318,19 @@ export default defineComponent({
     const nodes = reactive<BlogNode[]>([]);
     const visibleNodes = ref<BlogNode[]>([]);
 
+    const syncNodesFromStore = () => {
+      allBlogs.value = subscriptionStore.closeBlogs;
+      applyPage();
+      isLoadingNodes.value = false;
+    };
+
     const fetchBlogSubscriptions = async () => {
       isLoadingNodes.value = true;
       try {
         await subscriptionStore.fetchCloseBlogs();
-        allBlogs.value = subscriptionStore.closeBlogs;
-        applyPage();
+        syncNodesFromStore();
       } catch (error) {
         console.error('Error fetching blog subscriptions:', error);
-      } finally {
         isLoadingNodes.value = false;
       }
     };
@@ -661,8 +665,18 @@ export default defineComponent({
       return d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
     };
 
+    // App.vue에서 fetchCloseBlogs 완료 시 자동 동기화
+    watch(() => subscriptionStore.closeBlogs, (blogs) => {
+      if (blogs.length > 0) {
+        syncNodesFromStore();
+      }
+    }, { deep: true });
+
     onMounted(() => {
-      fetchBlogSubscriptions();
+      // store에 이미 데이터가 있으면 바로 동기화
+      if (subscriptionStore.closeBlogs.length > 0) {
+        syncNodesFromStore();
+      }
       fetchRecentPosts();
       animFrameId = requestAnimationFrame(animate);
       window.addEventListener('keydown', handleKeydown);
