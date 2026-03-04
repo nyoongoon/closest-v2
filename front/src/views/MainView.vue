@@ -1,6 +1,7 @@
 <template>
   <div class="main-page">
-  <div class="main-canvas" ref="canvasRef" @click="handleCanvasClick">
+  <div class="main-canvas" ref="canvasRef" @click="handleCanvasClick"
+    @touchstart="onCanvasTouchStart" @touchend="onCanvasTouchEnd">
     <svg class="main-canvas__svg">
       <!-- 노드 연결선 (그라디언트) -->
       <defs>
@@ -206,13 +207,11 @@
       </button>
     </div>
 
-    <!-- 탐색 버튼 (우측 중앙) -->
-    <button class="explore-fab" @click="$router.push('/explore')">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-      <span>탐색</span>
-    </button>
+    <!-- 스와이프 힌트 (우측 중앙) -->
+    <div class="canvas-swipe-hint">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      <span>밀어서 탐색</span>
+    </div>
 
     <!-- 스크롤 유도 -->
     <div v-if="recentPosts.length > 0" class="main-canvas__scroll-hint">
@@ -685,23 +684,27 @@ export default defineComponent({
       return recentPosts.value.slice(start, start + POST_PAGE_SIZE);
     });
 
-    // 피드 섹션 좌 스와이프 → 탐색
-    let feedTouchStartX = 0;
-    let feedTouchStartY = 0;
+    // 좌 스와이프 → 탐색 (캔버스 + 피드 공통)
+    let swipeTouchStartX = 0;
+    let swipeTouchStartY = 0;
 
-    const onFeedTouchStart = (e: TouchEvent) => {
-      feedTouchStartX = e.touches[0].clientX;
-      feedTouchStartY = e.touches[0].clientY;
+    const handleSwipeStart = (e: TouchEvent) => {
+      swipeTouchStartX = e.touches[0].clientX;
+      swipeTouchStartY = e.touches[0].clientY;
     };
 
-    const onFeedTouchEnd = (e: TouchEvent) => {
-      const dx = e.changedTouches[0].clientX - feedTouchStartX;
-      const dy = e.changedTouches[0].clientY - feedTouchStartY;
-      // 좌로 충분히 밀었고, 수평 이동이 수직보다 클 때
+    const handleSwipeEnd = (e: TouchEvent) => {
+      const dx = e.changedTouches[0].clientX - swipeTouchStartX;
+      const dy = e.changedTouches[0].clientY - swipeTouchStartY;
       if (dx < -80 && Math.abs(dx) > Math.abs(dy) * 1.5) {
         router.push('/explore');
       }
     };
+
+    const onCanvasTouchStart = handleSwipeStart;
+    const onCanvasTouchEnd = handleSwipeEnd;
+    const onFeedTouchStart = handleSwipeStart;
+    const onFeedTouchEnd = handleSwipeEnd;
 
     const scrollToFeedTop = () => {
       if (feedSectionRef.value) {
@@ -809,6 +812,8 @@ export default defineComponent({
       handleCanvasClick,
       truncName,
       feedSectionRef,
+      onCanvasTouchStart,
+      onCanvasTouchEnd,
       onFeedTouchStart,
       onFeedTouchEnd,
       recentPosts,
@@ -888,40 +893,26 @@ export default defineComponent({
 
 }
 
-// ── 탐색 FAB 버튼 ──
-.explore-fab {
+// ── 캔버스 스와이프 힌트 (우측 중앙) ──
+.canvas-swipe-hint {
   position: absolute;
-  right: 20px;
+  right: 16px;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 15;
+  z-index: 5;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 18px;
-  border-radius: 24px;
-  border: 1px solid rgba(0, 123, 255, 0.2);
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  color: #007bff;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 12px rgba(0, 123, 255, 0.1);
+  gap: 4px;
+  color: #bbb;
+  font-size: 11px;
+  font-weight: 500;
+  pointer-events: none;
+  animation: swipe-hint 2.5s ease-in-out infinite;
 
-  &:hover {
-    background: #007bff;
-    color: white;
-    box-shadow: 0 4px 20px rgba(0, 123, 255, 0.3);
-  }
-
-  @media (max-width: 480px) {
-    right: 12px;
-    padding: 8px 14px;
+  @media (min-width: 769px) {
+    // 데스크탑에서도 보여줌 (클릭 불가, 힌트만)
     font-size: 12px;
-
-    span { display: none; }
+    color: #ccc;
   }
 }
 
