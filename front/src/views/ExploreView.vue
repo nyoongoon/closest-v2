@@ -19,7 +19,10 @@
     <!-- 숏츠 카드 -->
     <Transition :name="slideDirection" mode="out-in">
       <div v-if="currentPost" :key="currentIndex" class="shorts-card">
-        <div class="shorts-card__bg" :style="bgStyle"></div>
+        <!-- 블러 배경 (분위기용) -->
+        <div class="shorts-card__bg-blur" :style="bgBlurStyle"></div>
+        <!-- 선명한 이미지 (적당한 크기) -->
+        <div class="shorts-card__bg-img" :style="bgImgStyle"></div>
         <div class="shorts-card__overlay"></div>
 
         <div class="shorts-card__content">
@@ -94,25 +97,27 @@ export default defineComponent({
 
     const currentPost = computed(() => posts.value[currentIndex.value] || null);
 
-    const bgStyle = computed(() => {
+    // 블러 배경 (분위기용, 확대+블러)
+    const bgBlurStyle = computed(() => {
       const p = currentPost.value;
       if (!p) return {};
-      // Use post thumbnail as background if available
       if (p.thumbnailUrl) {
-        return {
-          backgroundImage: `url(${p.thumbnailUrl})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-        };
+        return { backgroundImage: `url(${p.thumbnailUrl})` };
       }
-      // Fallback: gradient based on blog name hash
       const hash = hashCode(p.blogTitle || '');
       const h1 = Math.abs(hash) % 360;
       const h2 = (h1 + 40) % 360;
       return {
         background: `linear-gradient(135deg, hsl(${h1}, 60%, 25%) 0%, hsl(${h2}, 50%, 15%) 100%)`,
+        filter: 'none',
       };
+    });
+
+    // 선명한 이미지 (적당한 크기, contain)
+    const bgImgStyle = computed(() => {
+      const p = currentPost.value;
+      if (!p || !p.thumbnailUrl) return { display: 'none' };
+      return { backgroundImage: `url(${p.thumbnailUrl})` };
     });
 
     function hashCode(s: string): number {
@@ -267,7 +272,8 @@ export default defineComponent({
       paused,
       timerProgress,
       slideDirection,
-      bgStyle,
+      bgBlurStyle,
+      bgImgStyle,
       getFavicon,
       formatTime,
       next,
@@ -378,9 +384,29 @@ export default defineComponent({
   flex-direction: column;
   justify-content: flex-end;
 
-  &__bg {
+  // 블러 배경: 확대해서 화면 채움 + 블러 + 어둡게
+  &__bg-blur {
     position: absolute;
-    inset: 0;
+    inset: -20px; // 블러 edge 방지용 확장
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(30px) brightness(0.4);
+    transform: scale(1.1);
+  }
+
+  // 선명한 이미지: contain으로 비율 유지, 상단 40% 영역에 표시
+  &__bg-img {
+    position: absolute;
+    top: 5%;
+    left: 5%;
+    right: 5%;
+    bottom: 40%;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: 1;
+    border-radius: 12px;
   }
 
   &__overlay {
@@ -388,10 +414,13 @@ export default defineComponent({
     inset: 0;
     background: linear-gradient(
       to bottom,
-      transparent 30%,
+      rgba(0, 0, 0, 0.1) 0%,
+      transparent 25%,
+      transparent 45%,
       rgba(0, 0, 0, 0.6) 70%,
       rgba(0, 0, 0, 0.85) 100%
     );
+    z-index: 2;
   }
 
   &__content {
