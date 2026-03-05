@@ -2,6 +2,7 @@
 
 (function () {
   const feeds = [];
+  const hostname = location.hostname;
 
   // 1. <link> tags with RSS/Atom types
   const linkSelectors = [
@@ -25,20 +26,19 @@
     });
   });
 
-  // 2. Common RSS URL patterns (heuristic)
-  const hostname = location.hostname;
-  const commonPatterns = [];
+  // 2. Platform-specific RSS URL patterns (확정 피드)
+  const platformFeeds = [];
 
   // Tistory
-  if (hostname.includes('tistory.com')) {
-    commonPatterns.push(`${location.origin}/rss`);
+  if (hostname.endsWith('.tistory.com')) {
+    platformFeeds.push({ url: `${location.origin}/rss`, title: document.title, source: 'link' });
   }
 
   // Naver Blog
   if (hostname === 'blog.naver.com') {
     const blogId = location.pathname.split('/')[1];
     if (blogId) {
-      commonPatterns.push(`https://rss.blog.naver.com/${blogId}.xml`);
+      platformFeeds.push({ url: `https://rss.blog.naver.com/${blogId}.xml`, title: document.title, source: 'link' });
     }
   }
 
@@ -46,7 +46,7 @@
   if (hostname === 'velog.io') {
     const username = location.pathname.split('/')[1]?.replace('@', '');
     if (username) {
-      commonPatterns.push(`https://v2.velog.io/rss/${username}`);
+      platformFeeds.push({ url: `https://v2.velog.io/rss/${username}`, title: `${username} - velog`, source: 'link' });
     }
   }
 
@@ -54,25 +54,40 @@
   if (hostname === 'brunch.co.kr') {
     const match = location.pathname.match(/\/@(\w+)/);
     if (match) {
-      commonPatterns.push(`https://brunch.co.kr/rss/@@${match[1]}`);
+      platformFeeds.push({ url: `https://brunch.co.kr/rss/@@${match[1]}`, title: document.title, source: 'link' });
     }
   }
 
-  // WordPress common
-  if (!feeds.length) {
-    commonPatterns.push(`${location.origin}/feed`);
-    commonPatterns.push(`${location.origin}/rss`);
-    commonPatterns.push(`${location.origin}/feed.xml`);
-    commonPatterns.push(`${location.origin}/rss.xml`);
-    commonPatterns.push(`${location.origin}/atom.xml`);
+  // Medium
+  if (hostname === 'medium.com' || hostname.endsWith('.medium.com')) {
+    const pathParts = location.pathname.split('/').filter(Boolean);
+    if (pathParts.length > 0 && pathParts[0].startsWith('@')) {
+      platformFeeds.push({ url: `https://medium.com/feed/${pathParts[0]}`, title: document.title, source: 'link' });
+    } else if (pathParts.length > 0) {
+      platformFeeds.push({ url: `https://medium.com/feed/${pathParts[0]}`, title: document.title, source: 'guess' });
+    }
   }
 
-  // Add heuristic patterns (not validated, marked as guess)
-  commonPatterns.forEach((url) => {
-    if (!feeds.find((f) => f.url === url)) {
-      feeds.push({ url, title: document.title, source: 'guess' });
+  // GitHub.io (Jekyll blogs)
+  if (hostname.endsWith('.github.io')) {
+    platformFeeds.push({ url: `${location.origin}/feed.xml`, title: document.title, source: 'guess' });
+    platformFeeds.push({ url: `${location.origin}/atom.xml`, title: document.title, source: 'guess' });
+  }
+
+  // Add platform feeds if not already found via <link>
+  platformFeeds.forEach((pf) => {
+    if (!feeds.find((f) => f.url === pf.url)) {
+      feeds.push(pf);
     }
   });
+
+  // 3. Common fallback patterns (only if no feeds found yet)
+  if (feeds.length === 0) {
+    const commonPaths = ['/feed', '/rss', '/feed.xml', '/rss.xml', '/atom.xml', '/index.xml'];
+    commonPaths.forEach((path) => {
+      feeds.push({ url: `${location.origin}${path}`, title: document.title, source: 'guess' });
+    });
+  }
 
   // Send to background
   if (feeds.length > 0) {
