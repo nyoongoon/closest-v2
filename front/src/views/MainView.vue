@@ -1,6 +1,7 @@
 <template>
-  <div class="main-page">
-  <div class="main-canvas" ref="canvasRef" @click="handleCanvasClick">
+  <div class="main-page" ref="mainPageRef">
+  <div class="main-canvas" ref="canvasRef" @click="handleCanvasClick"
+    @touchstart="onCanvasTouchStart" @touchend="onCanvasTouchEnd">
     <svg class="main-canvas__svg">
       <!-- 노드 연결선 (그라디언트) -->
       <defs>
@@ -195,15 +196,21 @@
       <p class="main-canvas__empty-desc">상단의 '+ 구독' 버튼으로 블로그를 추가해보세요</p>
     </div>
 
-    <!-- 페이지 네비게이션 -->
-    <div v-if="totalPages > 1" class="page-nav" @click.stop>
-      <button class="page-nav__btn" @click="handlePrevPage" aria-label="이전">
+    <!-- 페이지 네비게이션 (드래그 가능) -->
+    <div v-if="totalPages > 1" ref="pageNavRef" class="page-nav page-nav--draggable" :style="pageNavStyle" @click.stop>
+      <button class="page-nav__btn" @click="handlePrevPageSafe" aria-label="이전">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
       <span class="page-nav__indicator">{{ nodePage + 1 }} / {{ totalPages }}</span>
-      <button class="page-nav__btn page-nav__btn--primary" @click="handleNextPage" aria-label="다음">
+      <button class="page-nav__btn page-nav__btn--primary" @click="handleNextPageSafe" aria-label="다음">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
+    </div>
+
+    <!-- 스와이프 힌트 (우측 중앙) -->
+    <div class="canvas-swipe-hint">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      <span>밀어서 탐색</span>
     </div>
 
     <!-- 스크롤 유도 -->
@@ -216,13 +223,38 @@
   </div>
 
   <!-- 최신 글 피드 -->
-  <section v-if="recentPosts.length > 0" class="recent-feed">
+  <section
+    v-if="recentPosts.length > 0"
+    class="recent-feed"
+    ref="feedSectionRef"
+    @touchstart="onFeedTouchStart"
+    @touchend="onFeedTouchEnd"
+  >
+    <!-- 피드 페이지 네비게이션 (드래그 가능) -->
+    <div v-if="postTotalPages > 1" ref="feedPagingRef" class="feed-paging feed-paging--draggable" :style="feedPagingStyle" @click.stop>
+      <button
+        class="feed-paging__btn"
+        :disabled="postPage === 0"
+        @click="handlePostPrevPageSafe"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="feed-paging__info">{{ postPage + 1 }} / {{ postTotalPages }}</span>
+      <button
+        class="feed-paging__btn"
+        :disabled="postPage >= postTotalPages - 1"
+        @click="handlePostNextPageSafe"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
     <div class="recent-feed__inner">
       <h2 class="recent-feed__title">최신 글</h2>
       <div class="recent-feed__list">
         <a
-          v-for="(post, i) in recentPosts"
-          :key="i"
+          v-for="(post, i) in pagedPosts"
+          :key="postPage + '-' + i"
           :href="post.postUrl"
           target="_blank"
           rel="noopener noreferrer"
@@ -246,15 +278,32 @@
         </a>
       </div>
     </div>
+
+    <!-- 위로 스크롤 유도 -->
+    <div class="feed-scroll-up-hint">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="18 15 12 9 6 15"/>
+      </svg>
+      <span>올려서 이웃보기</span>
+    </div>
+
+    <!-- 좌로 스와이프 힌트 -->
+    <div class="feed-swipe-hint">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      <span>밀어서 탐색</span>
+    </div>
   </section>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, onUnmounted, reactive, ref, computed, watch } from 'vue';
+import { defineComponent, onMounted, onUnmounted, onActivated, reactive, ref, computed, watch } from 'vue';
+import { useRouter, onBeforeRouteLeave } from 'vue-router';
 import { useAuthStore } from '@/stores';
 import { useSubscriptionStore } from '@/stores/subscription';
+import { useExploreStore } from '@/stores/explore';
 import { useToast } from '@/composables/useToast';
+import { useDraggable } from '@/composables/useDraggable';
 import { getAccessTokenFromCookie, deleteCookieFromBrowser } from '@/utils/cookie';
 import { authApi, postApi } from '@/services/api';
 import { getFaviconUrl } from '@/utils/favicon';
@@ -270,11 +319,46 @@ export default defineComponent({
   },
   emits: ['update:isLoggedIn', 'update:showLoginModal', 'update:showSubscribeModal'],
   setup(props, { emit }) {
+    const router = useRouter();
     const authStore = useAuthStore();
     const subscriptionStore = useSubscriptionStore();
+    const exploreStore = useExploreStore();
     const { showToast } = useToast();
 
+    const mainPageRef = ref<HTMLElement | null>(null);
     const canvasRef = ref<HTMLElement | null>(null);
+    const feedSectionRef = ref<HTMLElement | null>(null);
+
+    // 탐색 페이지 진입 전 스크롤 위치 저장/복원
+    const SCROLL_KEY = 'closest-main-scroll';
+
+    // 드래그 가능한 페이징 버튼
+    const pageNavRef = ref<HTMLElement | null>(null);
+    const feedPagingRef = ref<HTMLElement | null>(null);
+
+    const { x: pageNavX, y: pageNavY, wasDrag: pageNavWasDrag } = useDraggable(pageNavRef, {
+      storageKey: 'closest-page-nav-pos-v2',
+      defaultRight: 16,
+      defaultBottom: 72,
+      boundary: canvasRef,
+    });
+
+    const { x: feedPagingX, y: feedPagingY, wasDrag: feedPagingWasDrag } = useDraggable(feedPagingRef, {
+      storageKey: 'closest-feed-paging-pos-v2',
+      defaultRight: 16,
+      defaultBottom: 56,
+      boundary: feedSectionRef,
+    });
+
+    const pageNavStyle = computed(() => ({
+      left: pageNavX.value + 'px',
+      top: pageNavY.value + 'px',
+    }));
+
+    const feedPagingStyle = computed(() => ({
+      left: feedPagingX.value + 'px',
+      top: feedPagingY.value + 'px',
+    }));
 
     // 반응형
     const isMobile = ref(window.innerWidth < 768);
@@ -353,6 +437,10 @@ export default defineComponent({
       nodePage.value = (nodePage.value - 1 + totalPages.value) % totalPages.value;
       applyPage();
     };
+
+    // 드래그 후 클릭 무시 래퍼
+    const handleNextPageSafe = () => { if (!pageNavWasDrag()) handleNextPage(); };
+    const handlePrevPageSafe = () => { if (!pageNavWasDrag()) handlePrevPage(); };
 
     const createNodeFromBlog = (blog: any): BlogNode => {
       const initialPosition = getRandomPosition();
@@ -633,12 +721,69 @@ export default defineComponent({
       return name.length > 6 ? name.slice(0, 6) : name;
     };
 
-    // 최신 글 피드
+    // 최신 글 피드 + 페이징
     const recentPosts = ref<RecentPost[]>([]);
+    const POST_PAGE_SIZE = 10;
+    const postPage = ref(0);
+    const postTotalPages = computed(() => Math.max(1, Math.ceil(recentPosts.value.length / POST_PAGE_SIZE)));
+    const pagedPosts = computed(() => {
+      const start = postPage.value * POST_PAGE_SIZE;
+      return recentPosts.value.slice(start, start + POST_PAGE_SIZE);
+    });
+
+    // 좌 스와이프 → 탐색 (캔버스 + 피드 공통)
+    let swipeTouchStartX = 0;
+    let swipeTouchStartY = 0;
+
+    const handleSwipeStart = (e: TouchEvent) => {
+      swipeTouchStartX = e.touches[0].clientX;
+      swipeTouchStartY = e.touches[0].clientY;
+    };
+
+    const handleSwipeEnd = (e: TouchEvent) => {
+      const dx = e.changedTouches[0].clientX - swipeTouchStartX;
+      const dy = e.changedTouches[0].clientY - swipeTouchStartY;
+      if (dx < -80 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        // 스크롤 위치 저장 후 탐색 진입
+        if (mainPageRef.value) {
+          sessionStorage.setItem(SCROLL_KEY, String(mainPageRef.value.scrollTop));
+        }
+        router.push('/explore');
+      }
+    };
+
+    const onCanvasTouchStart = handleSwipeStart;
+    const onCanvasTouchEnd = handleSwipeEnd;
+    const onFeedTouchStart = handleSwipeStart;
+    const onFeedTouchEnd = handleSwipeEnd;
+
+    const scrollToFeedTop = () => {
+      if (feedSectionRef.value) {
+        feedSectionRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+
+    const handlePostNextPage = () => {
+      if (postPage.value < postTotalPages.value - 1) {
+        postPage.value++;
+        scrollToFeedTop();
+      }
+    };
+
+    const handlePostPrevPage = () => {
+      if (postPage.value > 0) {
+        postPage.value--;
+        scrollToFeedTop();
+      }
+    };
+
+    // 드래그 후 클릭 무시 래퍼
+    const handlePostNextPageSafe = () => { if (!feedPagingWasDrag()) handlePostNextPage(); };
+    const handlePostPrevPageSafe = () => { if (!feedPagingWasDrag()) handlePostPrevPage(); };
 
     const fetchRecentPosts = async () => {
       try {
-        recentPosts.value = await postApi.getRecentPosts(30);
+        recentPosts.value = await postApi.getRecentPosts(100);
       } catch (e) {
         console.error('Failed to fetch recent posts:', e);
       }
@@ -678,9 +823,23 @@ export default defineComponent({
         syncNodesFromStore();
       }
       fetchRecentPosts();
+      // 탐색 이미지 프리로드 (백그라운드)
+      exploreStore.preload();
       animFrameId = requestAnimationFrame(animate);
       window.addEventListener('keydown', handleKeydown);
       window.addEventListener('resize', handleResize);
+
+      // 탐색에서 돌아올 때 스크롤 위치 복원
+      const savedScroll = sessionStorage.getItem(SCROLL_KEY);
+      if (savedScroll && mainPageRef.value) {
+        const pos = parseInt(savedScroll, 10);
+        if (pos > 0) {
+          requestAnimationFrame(() => {
+            mainPageRef.value?.scrollTo({ top: pos, behavior: 'instant' as ScrollBehavior });
+          });
+        }
+        sessionStorage.removeItem(SCROLL_KEY);
+      }
     });
 
     onUnmounted(() => {
@@ -690,6 +849,7 @@ export default defineComponent({
     });
 
     return {
+      mainPageRef,
       canvasRef,
       centerNode,
       currentCenterNodeSize,
@@ -714,6 +874,10 @@ export default defineComponent({
       totalPages,
       handleNextPage,
       handlePrevPage,
+      handleNextPageSafe,
+      handlePrevPageSafe,
+      pageNavRef,
+      pageNavStyle,
       selectedIndex,
       popoverStyle,
       popoverAvatarUrl,
@@ -721,7 +885,21 @@ export default defineComponent({
       visitSelectedBlog,
       handleCanvasClick,
       truncName,
+      feedSectionRef,
+      onCanvasTouchStart,
+      onCanvasTouchEnd,
+      onFeedTouchStart,
+      onFeedTouchEnd,
       recentPosts,
+      pagedPosts,
+      postPage,
+      postTotalPages,
+      handlePostNextPage,
+      handlePostPrevPage,
+      handlePostNextPageSafe,
+      handlePostPrevPageSafe,
+      feedPagingRef,
+      feedPagingStyle,
       getPostFavicon,
       formatRelativeTime,
       loginForm,
@@ -741,6 +919,10 @@ export default defineComponent({
 <style lang="scss" scoped>
 .main-page {
   width: 100%;
+  height: 100vh;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
 }
 
 .main-canvas {
@@ -749,6 +931,7 @@ export default defineComponent({
   height: 100vh;
   background: linear-gradient(145deg, #fafbff 0%, #f5f7ff 50%, #fafbff 100%);
   overflow: hidden;
+  scroll-snap-align: start;
 
   &__svg {
     position: absolute;
@@ -786,11 +969,35 @@ export default defineComponent({
     margin: 0;
   }
 
+}
+
+// ── 캔버스 스와이프 힌트 (우측 중앙) ──
+.canvas-swipe-hint {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #bbb;
+  font-size: 11px;
+  font-weight: 500;
+  pointer-events: none;
+  animation: swipe-hint-fade 4s ease-in-out forwards;
+
+  @media (min-width: 769px) {
+    font-size: 12px;
+    color: #ccc;
+  }
+}
+
+.main-canvas {
   &__scroll-hint {
     position: absolute;
     bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
+    right: 16px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -798,7 +1005,7 @@ export default defineComponent({
     color: #bbb;
     font-size: 12px;
     font-weight: 500;
-    animation: bounce-hint 2s ease-in-out infinite;
+    animation: bounce-hint-fade 4s ease-in-out forwards;
     z-index: 5;
     pointer-events: none;
   }
@@ -806,10 +1013,6 @@ export default defineComponent({
 
 // 페이지 네비게이션
 .page-nav {
-  position: absolute;
-  bottom: 64px;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -819,6 +1022,15 @@ export default defineComponent({
   border-radius: 20px;
   padding: 4px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+
+  &--draggable {
+    position: absolute;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+
+    &:active { cursor: grabbing; }
+  }
 
   &__btn {
     display: flex;
@@ -860,19 +1072,35 @@ export default defineComponent({
   }
 }
 
-@keyframes bounce-hint {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50% { transform: translateX(-50%) translateY(6px); }
+@keyframes bounce-hint-fade {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  15%, 35% { transform: translateY(0); }
+  25% { transform: translateY(6px); }
+  45%, 65% { transform: translateY(0); }
+  55% { transform: translateY(6px); }
+  75% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 // ── 최신 글 피드 ──
 .recent-feed {
+  position: relative;
   background: #fff;
   border-top: 1px solid #f0f0f0;
-  padding: 48px 24px 64px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 24px;
+  box-sizing: border-box;
 
   &__inner {
     max-width: 680px;
+    width: 100%;
     margin: 0 auto;
   }
 
@@ -880,7 +1108,7 @@ export default defineComponent({
     font-size: 20px;
     font-weight: 800;
     color: #222;
-    margin: 0 0 24px;
+    margin: 0 0 20px;
     letter-spacing: -0.3px;
   }
 
@@ -889,6 +1117,114 @@ export default defineComponent({
     flex-direction: column;
     gap: 2px;
   }
+}
+
+// ── 피드 페이징 ──
+.feed-paging {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  border-radius: 20px;
+  padding: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e8e8e8;
+
+  &--draggable {
+    position: absolute;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+
+    &:active { cursor: grabbing; }
+  }
+
+  &__btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover:not(:disabled) {
+      background: #f0f4ff;
+      color: #007bff;
+    }
+
+    &:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
+  }
+
+  &__info {
+    font-size: 13px;
+    font-weight: 600;
+    color: #888;
+    min-width: 48px;
+    text-align: center;
+  }
+}
+
+// ── 위로 스크롤 유도 (상단 우측) ──
+.feed-scroll-up-hint {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #bbb;
+  font-size: 12px;
+  font-weight: 500;
+  animation: bounce-up-fade 4s ease-in-out forwards;
+  pointer-events: none;
+  z-index: 5;
+}
+
+// ── 스와이프 힌트 (우하단) ──
+.feed-swipe-hint {
+  position: absolute;
+  bottom: 20px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #ccc;
+  font-size: 11px;
+  font-weight: 500;
+  animation: swipe-hint-fade 4s ease-in-out forwards;
+  pointer-events: none;
+  z-index: 5;
+}
+
+// ── 힌트 공통 애니메이션 (4초 후 자동 사라짐) ──
+@keyframes swipe-hint-fade {
+  0% { opacity: 0; transform: translateX(0); }
+  10% { opacity: 1; }
+  25% { transform: translateX(-6px); opacity: 1; }
+  40% { transform: translateX(0); }
+  55% { transform: translateX(-6px); opacity: 1; }
+  70% { transform: translateX(0); opacity: 1; }
+  100% { opacity: 0; transform: translateX(0); }
+}
+
+@keyframes bounce-up-fade {
+  0% { opacity: 0; transform: translateY(0); }
+  10% { opacity: 1; }
+  25% { transform: translateY(-6px); }
+  40% { transform: translateY(0); }
+  55% { transform: translateY(-6px); }
+  70% { transform: translateY(0); opacity: 1; }
+  100% { opacity: 0; }
 }
 
 .post-card {

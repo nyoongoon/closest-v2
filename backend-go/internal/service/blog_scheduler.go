@@ -1,6 +1,7 @@
 package service
 
 import (
+	"database/sql"
 	"log"
 	"time"
 
@@ -88,10 +89,18 @@ func (s *BlogSchedulerService) updateBlog(b *blog.Blog) {
 	}
 
 	for _, item := range f.Items {
+		thumbNull := sql.NullString{}
+		if item.ThumbnailURL != "" {
+			thumbNull = sql.NullString{String: item.ThumbnailURL, Valid: true}
+		}
+
 		if existing, ok := postMap[item.PostURL]; ok {
-			if existing.PostTitle != item.PostTitle || existing.PublishedDateTime != item.PublishedDateTime.Format(time.RFC3339) {
+			if existing.PostTitle != item.PostTitle || existing.PublishedDateTime != item.PublishedDateTime.Format(time.RFC3339) || (thumbNull.Valid && !existing.ThumbnailURL.Valid) {
 				existing.PostTitle = item.PostTitle
 				existing.PublishedDateTime = item.PublishedDateTime.Format(time.RFC3339)
+				if thumbNull.Valid {
+					existing.ThumbnailURL = thumbNull
+				}
 				if err := s.blogRepo.UpdatePost(existing); err != nil {
 					log.Printf("포스트 업데이트 실패: %v", err)
 				}
@@ -103,6 +112,7 @@ func (s *BlogSchedulerService) updateBlog(b *blog.Blog) {
 				PostTitle:         item.PostTitle,
 				PublishedDateTime: item.PublishedDateTime.Format(time.RFC3339),
 				PostVisitCount:    0,
+				ThumbnailURL:      thumbNull,
 			}
 			if _, err := s.blogRepo.SavePost(newPost); err != nil {
 				log.Printf("포스트 저장 실패: %v", err)

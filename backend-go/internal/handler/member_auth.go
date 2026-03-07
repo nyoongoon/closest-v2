@@ -71,5 +71,11 @@ func (h *MemberAuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteStrictMode,
 	})
 
+	// 쿠키 외에 JSON body로도 토큰 반환 (Chrome 확장 등 외부 클라이언트용)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"accessToken":  tokens.AccessToken,
+		"refreshToken": tokens.RefreshToken,
+	})
 }

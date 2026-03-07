@@ -8,6 +8,11 @@
 
     <!-- 우상단: 액션 -->
     <div class="floating-ui__actions">
+      <router-link to="/discover" class="floating-ui__pill" title="블로그 탐색">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </router-link>
       <template v-if="isLoggedIn">
         <router-link
           to="/subscriptions"
